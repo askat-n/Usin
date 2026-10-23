@@ -17,7 +17,8 @@ final class SyncEngine {
         case failed(String)
     }
 
-    private static let snapshotName = "byeknow-snapshot.json"
+    /// Общий файл первой версии синхронизации — читаем только при переходе на журналы.
+    private static let legacyName = "byeknow-snapshot.json"
     static let pollInterval: Double = 1
 
     let context: ModelContext
@@ -32,8 +33,21 @@ final class SyncEngine {
     /// Есть правки на устройстве, которые ещё не дошли до Google Drive.
     var hasUnsavedChanges = false
     private var editCount = 0
-    /// Версия снимка на Drive, которая уже есть на устройстве.
-    private var knownRemoteVersion: String?
+
+    /// Журнал этого устройства (все записи со временем изменения).
+    private var ledger: Ledger?
+    /// Последний отправленный на Drive журнал.
+    private var lastUploaded: Ledger?
+    /// Скачанные журналы других устройств и их версии на Drive.
+    private var remoteCache: [String: (version: String?, ledger: Ledger)] = [:]
+    private var ownFileID: String?
+    private var driveImages: Set<String> = []
+    /// Картинки, которые нужны, но ещё не скачаны.
+    private var missingImages: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: "sync.missingImages") ?? []) }
+        set { UserDefaults.standard.set(Array(newValue), forKey: "sync.missingImages") }
+    }
+    private var isBusy = false
 
     private var isApplying = false
     private var connectAttempt = 0
@@ -48,6 +62,18 @@ final class SyncEngine {
         email = auth.email
         status = auth.isSignedIn ? .idle : .off
         lastSync = UserDefaults.standard.object(forKey: "sync.lastSync") as? Date
+        ledger = Self.loadLedger()
+    }
+
+    /// Свой файл на Drive у каждого устройства.
+    private static var deviceFileName: String {
+        let key = "sync.deviceID"
+        let id = UserDefaults.standard.string(forKey: key) ?? {
+            let new = UUID().uuidString
+            UserDefaults.standard.set(new, forKey: key)
+            return new
+        }()
+        return "device-\(id).json"
     }
 
     // MARK: - Connect / disconnect
@@ -64,9 +90,9 @@ final class SyncEngine {
             #endif
             guard attempt == connectAttempt else { return } // нажали «Отмена»
             email = auth.email
-            let remote = try await fetchRemote().snapshot
+            let remoteHasData = try await fetchRemoteHasData()
             let local = SyncSnapshot.current(in: context)
-            if local.hasUserData && remote.hasUserData {
+            if local.hasUserData && remoteHasData {
                 needsReplaceConfirmation = true
                 status = .off
                 return
@@ -140,8 +166,7 @@ final class SyncEngine {
         status = .off
         lastSync = nil
         UserDefaults.standard.removeObject(forKey: "sync.lastSync")
-        try? FileManager.default.removeItem(at: Self.baseURL)
-        knownRemoteVersion = nil
+        resetSyncState()
         stopPeriodic()
     }
 
@@ -149,14 +174,14 @@ final class SyncEngine {
         auth.persist()
         isConnected = true
         status = .idle
-        try? FileManager.default.removeItem(at: Self.baseURL)
+        resetSyncState()
         startPeriodic()
     }
 
     // MARK: - Triggers
 
-    /// После правок — синхронизировать через полсекунды (правки подряд склеиваются).
-    func scheduleSync(after seconds: Double = 0.5) {
+    /// После правок — отправить через 0,3 с (правки подряд склеиваются).
+    func scheduleSync(after seconds: Double = 0.3) {
         guard isConnected, !isApplying else { return }
         editCount += 1
         hasUnsavedChanges = true
@@ -188,41 +213,25 @@ final class SyncEngine {
 
     // MARK: - Sync
 
-    /// Лёгкая проверка: спрашиваем у Drive только версию снимка.
-    /// Если никто ничего не менял — ничего не скачиваем и облачко не мигает.
+    /// Каждую секунду: сохранить свои правки и спросить у Drive, не поменялось ли что-то.
+    /// Если ничего не поменялось — это один короткий запрос, облачко не мигает.
     func pollRemote() async {
-        guard isConnected, status != .syncing, status != .connecting else { return }
+        guard isConnected, !isBusy, status != .connecting else { return }
         // Не ждём автосохранения базы (оно бывает раз в несколько секунд) — сохраняем сами.
         if context.hasChanges, (try? context.save()) != nil {
             editCount += 1
             hasUnsavedChanges = true
         }
-        if hasUnsavedChanges || knownRemoteVersion == nil {
-            await syncNow()
-            return
-        }
-        do {
-            let drive = DriveClient(token: try await auth.validAccessToken())
-            let version = try await drive.list().first { $0.name == Self.snapshotName }?.version
-            if version != knownRemoteVersion {
-                await syncNow()
-            } else {
-                if case .failed = status { status = .idle }
-                lastSync = Date()
-                UserDefaults.standard.set(lastSync, forKey: "sync.lastSync")
-            }
-        } catch {
-            status = .failed(Self.message(for: error))
-        }
+        await syncNow()
     }
 
     func syncNow(replaceLocal: Bool = false) async {
         guard isConnected else { return }
-        if status == .syncing {
+        if isBusy {
             pending = true
             return
         }
-        status = .syncing
+        isBusy = true
         let editsAtStart = editCount
         do {
             try await performSync(replaceLocal: replaceLocal)
@@ -239,6 +248,7 @@ final class SyncEngine {
                 status = .failed(Self.message(for: error))
             }
         }
+        isBusy = false
         if pending {
             pending = false
             await syncNow()
@@ -246,77 +256,215 @@ final class SyncEngine {
     }
 
     private func performSync(replaceLocal: Bool) async throws {
-        let (remote, files, drive) = try await fetchRemote()
-        let byName = Dictionary(files.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
-        let base = replaceLocal ? SyncSnapshot() : loadBase()
-
-        func mergedNow() -> SyncSnapshot {
-            if replaceLocal { return remote.sanitized().sorted() }
-            var local = SyncSnapshot.current(in: context)
-            local.adoptRoot(from: remote)
-            return SyncSnapshot.merge(base: base, local: local, remote: remote)
-        }
-
-        // Картинки: загрузить свои новые, скачать чужие.
-        let localImages = SyncSnapshot.localImages(in: context)
-        let needed = Set(mergedNow().blocks.compactMap(\.imageHash))
-        var images = localImages
-        for hash in needed {
-            let name = "img-\(hash)"
-            if let data = localImages[hash] {
-                if byName[name] == nil { try await drive.create(name: name, data: data) }
-            } else if let file = byName[name] {
-                images[hash] = try await drive.download(file.id)
-            }
-        }
-
-        // Слияние считаем заново прямо перед записью — вдруг пока качали, что-то поправили.
-        let merged = mergedNow()
-        isApplying = true
-        defer { isApplying = false }
-        try merged.apply(to: context, images: images)
-
-        if merged != remote {
-            let data = try JSONEncoder().encode(merged)
-            if let file = byName[Self.snapshotName] {
-                try await drive.update(id: file.id, data: data)
-            } else {
-                try await drive.create(name: Self.snapshotName, data: data)
-            }
-            knownRemoteVersion = nil // новую версию узнаем при следующей проверке
-        } else {
-            knownRemoteVersion = byName[Self.snapshotName]?.version
-        }
-        saveBase(merged)
-    }
-
-    private func fetchRemote() async throws -> (snapshot: SyncSnapshot, files: [DriveFile], drive: DriveClient) {
         let drive = DriveClient(token: try await auth.validAccessToken())
         let files = try await drive.list()
-        var snapshot = SyncSnapshot()
-        if let file = files.first(where: { $0.name == Self.snapshotName }) {
-            snapshot = try JSONDecoder().decode(SyncSnapshot.self, from: try await drive.download(file.id))
+        let byName = Dictionary(files.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        let ownName = Self.deviceFileName
+        ownFileID = byName[ownName]?.id
+        driveImages = Set(files.compactMap { $0.name.hasPrefix("img-") ? String($0.name.dropFirst(4)) : nil })
+
+        let deviceFiles = files.filter { $0.name.hasPrefix("device-") && $0.name != ownName }
+        let remoteChanged = deviceFiles.contains { file in
+            guard let cached = remoteCache[file.name], let version = file.version else { return true }
+            return cached.version != version
+        } || remoteCache.keys.contains { name in !deviceFiles.contains { $0.name == name } }
+        let firstBuild = ledger == nil || replaceLocal
+        let missing = missingImages.intersection(driveImages)
+
+        // Ничего не поменялось ни тут, ни там — выходим после одного запроса.
+        if !replaceLocal, !firstBuild, !remoteChanged, !hasUnsavedChanges, missing.isEmpty,
+           ownFileID != nil, lastUploaded != nil {
+            return
         }
-        return (snapshot, files, drive)
+
+        // 1. Скачать журналы других устройств, которые изменились.
+        var remotes: [Ledger] = []
+        for file in deviceFiles {
+            if let cached = remoteCache[file.name], file.version != nil, cached.version == file.version {
+                remotes.append(cached.ledger)
+                continue
+            }
+            status = .syncing
+            let ledger = try JSONDecoder().decode(Ledger.self, from: try await drive.download(file.id))
+            remoteCache[file.name] = (file.version, ledger)
+            remotes.append(ledger)
+        }
+        remoteCache = remoteCache.filter { name, _ in deviceFiles.contains { $0.name == name } }
+
+        // Первая версия синхронизации хранила всё в одном общем файле.
+        var legacy: SyncSnapshot?
+        if firstBuild, let file = byName[Self.legacyName] {
+            status = .syncing
+            var snapshot = try JSONDecoder().decode(SyncSnapshot.self, from: try await drive.download(file.id))
+            snapshot.remapRoot()
+            legacy = snapshot
+            remotes.append(Ledger(legacy: snapshot))
+        }
+
+        // 2. Скачать картинки, которых на устройстве нет.
+        let preview = Ledger.merge([ledger ?? Ledger()] + remotes).snapshot
+        let localHashes = localImageHashes()
+        var wanted = Set(preview.blocks.compactMap(\.imageHash)).subtracting(localHashes).union(missing)
+        wanted.formIntersection(driveImages)
+        var images: [String: Data] = [:]
+        for hash in wanted {
+            guard let file = byName["img-\(hash)"] else { continue }
+            status = .syncing
+            images[hash] = try await drive.download(file.id)
+        }
+
+        // 3. Записать правки устройства в журнал и объединить с остальными.
+        //    Между чтением устройства и записью на него нет ожиданий — правки не потеряются.
+        let now = Date()
+        var merged: Ledger
+        var localChanged = false
+        if replaceLocal {
+            merged = Ledger.merge(remotes)
+        } else {
+            var mine = ledger ?? Ledger()
+            let before = mine
+            let local = SyncSnapshot.current(in: context)
+            mine.record(local, now: now, firstStamp: firstBuild ? firstStamp(legacy: legacy, now: now) : { _ in now })
+            localChanged = mine != before
+            merged = Ledger.merge([mine] + remotes)
+        }
+
+        let target = merged.snapshot
+        if replaceLocal || remoteChanged || firstBuild || !images.isEmpty
+            || target != SyncSnapshot.current(in: context) {
+            isApplying = true
+            defer { isApplying = false }
+            var stillMissing = try target.apply(to: context, images: images)
+            stillMissing.formUnion(missingImages.subtracting(images.keys))
+            try repairImages(images)
+            missingImages = stillMissing
+        }
+        ledger = merged
+        Self.saveLedger(merged)
+
+        // 4. Отправить свой журнал, если на этом устройстве что-то изменилось.
+        if localChanged || replaceLocal || ownFileID == nil || lastUploaded == nil {
+            status = .syncing
+            try await uploadImages(for: target, drive: drive)
+            let data = try JSONEncoder().encode(merged)
+            if let id = ownFileID {
+                try await drive.update(id: id, data: data)
+            } else {
+                ownFileID = try await drive.create(name: ownName, data: data).id
+            }
+            lastUploaded = merged
+        }
     }
 
-    // MARK: - Base (state after the last sync)
+    /// Какое время поставить записи, которую журнал видит впервые
+    /// (переход с первой версии синхронизации или первое подключение).
+    private func firstStamp(legacy: SyncSnapshot?, now: Date) -> (any SyncRecord) -> Date {
+        var base = Self.loadLegacyBase()
+        base?.remapRoot()
+        let encoder = JSONEncoder()
+        func index(_ s: SyncSnapshot?) -> [UUID: Data] {
+            guard let s else { return [:] }
+            var result: [UUID: Data] = [:]
+            for r in s.themes { result[r.id] = try? encoder.encode(r) }
+            for r in s.nodes { result[r.id] = try? encoder.encode(r) }
+            for r in s.blocks { result[r.id] = try? encoder.encode(r) }
+            for r in s.connections { result[r.id] = try? encoder.encode(r) }
+            return result
+        }
+        let legacyIndex = index(legacy)
+        let baseIndex = index(base)
+        return { rec in
+            let data = try? encoder.encode(rec)
+            if legacyIndex[rec.id] == data { return Ledger.legacyStamp }
+            // Сфера по умолчанию на новом устройстве не должна перебить настроенную.
+            if let node = rec as? NodeRecord, node.isRoot,
+               node.title == "ByeKnow", node.x == 0, node.y == 0, node.fillIndex == 6, node.inkIndex == 0 {
+                return Ledger.freshRootStamp
+            }
+            if baseIndex[rec.id] == data { return Ledger.staleCopyStamp }
+            return now
+        }
+    }
 
-    private static var baseURL: URL {
+    /// Есть ли на Drive чьи-то заметки (для вопроса «стереть и заменить?»).
+    private func fetchRemoteHasData() async throws -> Bool {
+        let drive = DriveClient(token: try await auth.validAccessToken())
+        for file in try await drive.list() {
+            if file.name.hasPrefix("device-") {
+                let ledger = try JSONDecoder().decode(Ledger.self, from: try await drive.download(file.id))
+                if ledger.hasUserData { return true }
+            } else if file.name == Self.legacyName {
+                let snapshot = try JSONDecoder().decode(SyncSnapshot.self, from: try await drive.download(file.id))
+                if snapshot.hasUserData { return true }
+            }
+        }
+        return false
+    }
+
+    // MARK: - Images
+
+    private func localImageHashes() -> Set<String> {
+        let blocks = (try? context.fetch(FetchDescriptor<NoteBlock>())) ?? []
+        return Set(blocks.compactMap { $0.kind == .image ? $0.imageHash : nil }).subtracting(missingImages)
+    }
+
+    /// Докачанные картинки — в блоки, которые их ждали.
+    private func repairImages(_ images: [String: Data]) throws {
+        for (hash, data) in images {
+            let wanted: String? = hash
+            let d = FetchDescriptor<NoteBlock>(predicate: #Predicate { $0.imageHash == wanted })
+            for block in (try? context.fetch(d)) ?? [] { block.setImage(data) }
+        }
+        if context.hasChanges { try context.save() }
+    }
+
+    private func uploadImages(for snapshot: SyncSnapshot, drive: DriveClient) async throws {
+        for hash in Set(snapshot.blocks.compactMap(\.imageHash)) where !driveImages.contains(hash) {
+            let wanted: String? = hash
+            var d = FetchDescriptor<NoteBlock>(predicate: #Predicate { $0.imageHash == wanted })
+            d.fetchLimit = 1
+            guard let data = try? context.fetch(d).first?.imageData else { continue }
+            try await drive.create(name: "img-\(hash)", data: data)
+            driveImages.insert(hash)
+        }
+    }
+
+    // MARK: - Local state
+
+    private static var supportDir: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("ByeKnow", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("sync-base.json")
+        return dir
     }
 
-    private func loadBase() -> SyncSnapshot {
-        guard let data = try? Data(contentsOf: Self.baseURL),
-              let snapshot = try? JSONDecoder().decode(SyncSnapshot.self, from: data) else { return SyncSnapshot() }
-        return snapshot
+    private static var ledgerURL: URL { supportDir.appendingPathComponent("sync-ledger.json") }
+    /// Состояние после последней синхронизации из первой версии.
+    private static var legacyBaseURL: URL { supportDir.appendingPathComponent("sync-base.json") }
+
+    private static func loadLedger() -> Ledger? {
+        guard let data = try? Data(contentsOf: ledgerURL) else { return nil }
+        return try? JSONDecoder().decode(Ledger.self, from: data)
     }
 
-    private func saveBase(_ snapshot: SyncSnapshot) {
-        if let data = try? JSONEncoder().encode(snapshot) { try? data.write(to: Self.baseURL, options: .atomic) }
+    private static func saveLedger(_ ledger: Ledger) {
+        if let data = try? JSONEncoder().encode(ledger) { try? data.write(to: ledgerURL, options: .atomic) }
+    }
+
+    private static func loadLegacyBase() -> SyncSnapshot? {
+        guard let data = try? Data(contentsOf: legacyBaseURL) else { return nil }
+        return try? JSONDecoder().decode(SyncSnapshot.self, from: data)
+    }
+
+    private func resetSyncState() {
+        try? FileManager.default.removeItem(at: Self.ledgerURL)
+        try? FileManager.default.removeItem(at: Self.legacyBaseURL)
+        ledger = nil
+        lastUploaded = nil
+        remoteCache = [:]
+        ownFileID = nil
+        driveImages = []
+        missingImages = []
     }
 
     // MARK: - Errors

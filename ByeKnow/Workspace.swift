@@ -238,13 +238,28 @@ final class Workspace {
 
     private func ensureRoot() {
         let d = FetchDescriptor<Node>(predicate: #Predicate { $0.isRoot == true })
-        guard ((try? context.fetchCount(d)) ?? 0) == 0 else { return }
-        let root = Node(position: .zero)
-        root.isRoot = true
-        root.title = "ByeKnow"
-        root.shape = .circle
-        root.fillIndex = 6
-        context.insert(root)
-        try? context.save()
+        let roots = ((try? context.fetch(d)) ?? []).sorted { $0.createdAt < $1.createdAt }
+        guard let root = roots.first else {
+            let root = Node(position: .zero)
+            root.id = Node.rootID
+            root.isRoot = true
+            root.title = "ByeKnow"
+            root.shape = .circle
+            root.fillIndex = 6
+            context.insert(root)
+            try? context.save()
+            return
+        }
+        // Старые версии давали сфере случайный id — переводим на общий, стрелки тоже.
+        for extra in roots.dropFirst() { context.delete(extra) }
+        if root.id != Node.rootID {
+            let old = root.id
+            root.id = Node.rootID
+            for c in (try? context.fetch(FetchDescriptor<Connection>())) ?? [] {
+                if c.fromID == old { c.fromID = Node.rootID }
+                if c.toID == old { c.toID = Node.rootID }
+            }
+        }
+        if context.hasChanges { try? context.save() }
     }
 }

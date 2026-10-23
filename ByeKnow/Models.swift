@@ -142,6 +142,9 @@ final class Node {
         y = position.y
     }
 
+    /// У сферы ByeKnow один и тот же id на всех устройствах — так синхронизация не плодит две сферы.
+    static let rootID = UUID(uuidString: "B1E0B1E0-0000-4000-8000-000000000001")!
+
     var shape: NodeShape {
         get { NodeShape(rawValue: shapeRaw) ?? .card }
         set { shapeRaw = newValue.rawValue }
@@ -205,6 +208,8 @@ final class NoteBlock {
     var text: String = ""
     var isChecked: Bool = false
     @Attribute(.externalStorage) var imageData: Data?
+    /// Отпечаток картинки — чтобы при синхронизации не читать и не пересчитывать картинки каждый раз.
+    var imageHash: String?
     var node: Node?
 
     init(kind: BlockKind) {
@@ -214,6 +219,20 @@ final class NoteBlock {
     var kind: BlockKind {
         get { BlockKind(rawValue: kindRaw) ?? .text }
         set { kindRaw = newValue.rawValue }
+    }
+
+    /// Поставить или убрать картинку (вместе с её отпечатком).
+    func setImage(_ data: Data?) {
+        imageData = data
+        imageHash = data.map(sha256Hex)
+    }
+
+    /// Отпечаток картинки; у старых блоков считается один раз и запоминается.
+    var storedImageHash: String? {
+        if imageHash == nil, kind == .image, let data = imageData {
+            imageHash = sha256Hex(data)
+        }
+        return imageHash
     }
 
     var url: URL? {

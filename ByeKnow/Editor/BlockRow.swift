@@ -289,7 +289,7 @@ struct ImageBlock: View {
                     .frame(maxHeight: 460)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .contextMenu {
-                        Button(tr("Заменить из Фото"), systemImage: "photo") { block.imageData = nil }
+                        Button(tr("Заменить из Фото"), systemImage: "photo") { block.setImage(nil) }
                     }
             } else {
                 placeholder
@@ -300,7 +300,7 @@ struct ImageBlock: View {
             guard let item else { return }
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self) {
-                    block.imageData = data
+                    block.setImage(data)
                 }
                 pickerItem = nil
             }
@@ -344,7 +344,7 @@ struct ImageBlock: View {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         if let data = try? Data(contentsOf: url), PlatformImage(data: data) != nil {
-            block.imageData = data
+            block.setImage(data)
         }
     }
 }

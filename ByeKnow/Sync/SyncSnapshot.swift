@@ -66,7 +66,7 @@ struct SyncSnapshot: Codable, Equatable {
     }
 }
 
-func imageHash(_ data: Data) -> String {
+func sha256Hex(_ data: Data) -> String {
     SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
 }
 
@@ -90,7 +90,7 @@ extension SyncSnapshot {
         }
         snapshot.blocks = blocks.map {
             BlockRecord(id: $0.id, nodeID: $0.node?.id, order: $0.order, kindRaw: $0.kindRaw,
-                        text: $0.text, isChecked: $0.isChecked, imageHash: $0.imageData.map(imageHash))
+                        text: $0.text, isChecked: $0.isChecked, imageHash: $0.storedImageHash)
         }
         snapshot.connections = connections.map {
             ConnectionRecord(id: $0.id, fromID: $0.fromID, toID: $0.toID, styleRaw: $0.styleRaw,
@@ -99,54 +99,11 @@ extension SyncSnapshot {
         }
         return snapshot.sorted()
     }
-
-    static func localImages(in context: ModelContext) -> [String: Data] {
-        let blocks = (try? context.fetch(FetchDescriptor<NoteBlock>())) ?? []
-        var result: [String: Data] = [:]
-        for block in blocks {
-            if let data = block.imageData { result[imageHash(data)] = data }
-        }
-        return result
-    }
 }
 
-// MARK: - Merge
+// MARK: - Cleanup
 
 extension SyncSnapshot {
-    /// Трёхстороннее слияние: base — что было после прошлой синхронизации.
-    /// Изменилось только на одной стороне — берём эту сторону.
-    /// Изменилось на обеих — правка этого устройства, но удаление никогда не побеждает правку.
-    static func merge(base: SyncSnapshot, local: SyncSnapshot, remote: SyncSnapshot) -> SyncSnapshot {
-        var merged = SyncSnapshot()
-        merged.themes = mergeRecords(base.themes, local.themes, remote.themes)
-        merged.nodes = mergeRecords(base.nodes, local.nodes, remote.nodes)
-        merged.blocks = mergeRecords(base.blocks, local.blocks, remote.blocks)
-        merged.connections = mergeRecords(base.connections, local.connections, remote.connections)
-        return merged.sanitized().sorted()
-    }
-
-    private static func mergeRecords<R: SyncRecord>(_ base: [R], _ local: [R], _ remote: [R]) -> [R] {
-        let b = Dictionary(base.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let l = Dictionary(local.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        let r = Dictionary(remote.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        var result: [R] = []
-        for id in Set(b.keys).union(l.keys).union(r.keys) {
-            let bv = b[id], lv = l[id], rv = r[id]
-            let pick: R?
-            if lv == bv {
-                pick = rv
-            } else if rv == bv {
-                pick = lv
-            } else if bv == nil {
-                pick = rv ?? lv // новое на обеих сторонах — побеждает Drive
-            } else {
-                pick = lv ?? rv
-            }
-            if let pick { result.append(pick) }
-        }
-        return result
-    }
-
     /// Убрать «висящие» ссылки: блоки без заметки, стрелки без концов, темы, которых нет.
     func sanitized() -> SyncSnapshot {
         var s = self
@@ -155,9 +112,7 @@ extension SyncSnapshot {
             s.nodes[i].themeID = nil
         }
         // Сфера должна быть ровно одна.
-        if let firstRoot = s.nodes.first(where: \.isRoot)?.id {
-            s.nodes.removeAll { $0.isRoot && $0.id != firstRoot }
-        }
+        s.nodes.removeAll { $0.isRoot && $0.id != Node.rootID }
         let nodeIDs = Set(s.nodes.map(\.id))
         s.blocks.removeAll { $0.nodeID.map { !nodeIDs.contains($0) } ?? true }
         s.connections.removeAll { !nodeIDs.contains($0.fromID) || !nodeIDs.contains($0.toID) }
@@ -172,28 +127,16 @@ extension SyncSnapshot {
         s.connections.sort { $0.id.uuidString < $1.id.uuidString }
         return s
     }
-
-    /// Каждое устройство при первом запуске создаёт свою сферу.
-    /// Берём сферу с Drive, чтобы их не стало две.
-    mutating func adoptRoot(from remote: SyncSnapshot) {
-        guard let remoteRoot = remote.nodes.first(where: \.isRoot),
-              let index = nodes.firstIndex(where: \.isRoot),
-              nodes[index].id != remoteRoot.id else { return }
-        let old = nodes[index].id
-        nodes[index].id = remoteRoot.id
-        for i in connections.indices {
-            if connections[i].fromID == old { connections[i].fromID = remoteRoot.id }
-            if connections[i].toID == old { connections[i].toID = remoteRoot.id }
-        }
-        for i in blocks.indices where blocks[i].nodeID == old { blocks[i].nodeID = remoteRoot.id }
-    }
 }
 
 // MARK: - Write to the device
 
 extension SyncSnapshot {
     /// Привести данные на устройстве к этому снимку. Меняем только то, что отличается.
-    func apply(to context: ModelContext, images: [String: Data]) throws {
+    /// Возвращает отпечатки картинок, которые нужны, но ещё не скачаны.
+    @discardableResult
+    func apply(to context: ModelContext, images: [String: Data]) throws -> Set<String> {
+        var missing = Set<String>()
         let themes = (try? context.fetch(FetchDescriptor<Theme>())) ?? []
         let nodes = (try? context.fetch(FetchDescriptor<Node>())) ?? []
         let blocks = (try? context.fetch(FetchDescriptor<NoteBlock>())) ?? []
@@ -250,8 +193,15 @@ extension SyncSnapshot {
             set(&block.kindRaw, rec.kindRaw)
             set(&block.text, rec.text)
             set(&block.isChecked, rec.isChecked)
-            if block.imageData.map(imageHash) != rec.imageHash {
-                block.imageData = rec.imageHash.flatMap { images[$0] }
+            if block.imageHash != rec.imageHash {
+                if let hash = rec.imageHash, let data = images[hash] {
+                    block.setImage(data)
+                } else {
+                    // Картинка ещё не скачана — запоминаем, какая нужна, докачаем позже.
+                    block.imageData = nil
+                    block.imageHash = rec.imageHash
+                    if let hash = rec.imageHash { missing.insert(hash) }
+                }
             }
             let owner = rec.nodeID.flatMap { nodeByID[$0] }
             if block.node?.id != owner?.id { block.node = owner }
@@ -289,6 +239,7 @@ extension SyncSnapshot {
         for t in themes where !keepThemes.contains(t.id) { context.delete(t) }
 
         if context.hasChanges { try context.save() }
+        return missing
     }
 }
 
