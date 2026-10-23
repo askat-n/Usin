@@ -30,6 +30,7 @@ final class Workspace {
     var activeTab: UUID?
 
     var showAllNotes = false
+    var showSettings = false
 
     init(context: ModelContext) {
         self.context = context
@@ -73,6 +74,8 @@ final class Workspace {
     @discardableResult
     func createNode(at point: CGPoint, theme: Theme? = nil, editTitle: Bool = true) -> Node {
         let node = Node(position: point)
+        node.shape = AppSettings.shared.defaultShape
+        if node.shape == .sticker { node.fillIndex = 3 }
         context.insert(node)
         node.theme = theme ?? filterThemeID.flatMap { self.theme($0) }
         node.addBlock(.text, context: context)

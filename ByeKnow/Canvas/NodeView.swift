@@ -34,7 +34,7 @@ struct NodeView: View {
                     .lineLimit(1)
             }
             if editing {
-                TextField("Название", text: $node.title, axis: .vertical)
+                TextField(tr("Название"), text: $node.title, axis: .vertical)
                     .textFieldStyle(.plain)
                     .focused($focused)
                     .task {

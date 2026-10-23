@@ -15,8 +15,6 @@ struct CanvasView: View {
     @State private var createdCount = 0
     @State private var lastTap: (id: UUID, time: Date)?
 
-    /// Сколько секунд держать палец на пустом месте, чтобы появилась заметка.
-    static let holdDuration: Double = 1.25
 
     struct HoldPress {
         let id = UUID()
@@ -60,7 +58,7 @@ struct CanvasView: View {
                 }
 
                 if let p = press, !p.moved, !p.fired {
-                    HoldRing(duration: Self.holdDuration)
+                    HoldRing(duration: AppSettings.shared.holdDuration)
                         .id(p.id)
                         .position(p.location)
                         .allowsHitTesting(false)
@@ -108,10 +106,14 @@ struct CanvasView: View {
     // MARK: - Background
 
     /// Фон холста: потянул — двигаешь холст, коснулся — снял выделение,
-    /// удержал палец на месте `holdDuration` секунд — новая заметка.
+    /// удержал палец на месте (время — в настройках) — новая заметка.
     private func background(_ t: CanvasTransform) -> some View {
         Color.canvas
-            .overlay { DotGrid(transform: t).allowsHitTesting(false) }
+            .overlay {
+                if AppSettings.shared.showGrid {
+                    DotGrid(transform: t).allowsHitTesting(false)
+                }
+            }
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 6)
@@ -151,7 +153,7 @@ struct CanvasView: View {
     private func startHoldTimer(_ t: CanvasTransform) {
         holdTask?.cancel()
         holdTask = Task {
-            try? await Task.sleep(for: .seconds(Self.holdDuration))
+            try? await Task.sleep(for: .seconds(AppSettings.shared.holdDuration))
             guard !Task.isCancelled, let p = press, !p.moved else { return }
             press?.fired = true
             ws.createNode(at: t.toWorld(p.location))
@@ -234,7 +236,7 @@ struct CanvasView: View {
                         finishLink(from: node, at: v.location, moved: moved, t)
                     }
             )
-            .help("Тяни к другой фигуре — стрелка. Нажми — новая связанная заметка")
+            .help(tr("Тяни к другой фигуре — стрелка. Нажми — новая связанная заметка"))
     }
 
     private func finishLink(from source: Node, at point: CGPoint, moved: Bool, _ t: CanvasTransform) {
@@ -277,7 +279,7 @@ struct CanvasView: View {
                 c.bendY = 0
                 c.style = .straight
             }
-            .help("Тяни, чтобы изогнуть. Двойной тап — выпрямить")
+            .help(tr("Тяни, чтобы изогнуть. Двойной тап — выпрямить"))
     }
 
     // MARK: - Zoom
@@ -314,7 +316,7 @@ struct CanvasView: View {
             }
         case .empty:
             if nodes.count <= 1 {
-                Text("Удержи палец на пустом месте — появится заметка")
+                Text(tr("Удержи палец на пустом месте — появится заметка"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)

@@ -11,10 +11,10 @@ enum NodeShape: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .card: "Карточка"
-        case .circle: "Круг"
-        case .square: "Квадрат"
-        case .sticker: "Стикер"
+        case .card: tr("Карточка")
+        case .circle: tr("Круг")
+        case .square: tr("Квадрат")
+        case .sticker: tr("Стикер")
         }
     }
 
@@ -53,12 +53,12 @@ enum BlockKind: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .text: "Текст"
-        case .heading: "Заголовок"
-        case .checklist: "Чек-лист"
-        case .image: "Картинка"
-        case .link: "Ссылка"
-        case .divider: "Разделитель"
+        case .text: tr("Текст")
+        case .heading: tr("Заголовок")
+        case .checklist: tr("Чек-лист")
+        case .image: tr("Картинка")
+        case .link: tr("Ссылка")
+        case .divider: tr("Разделитель")
         }
     }
 
@@ -78,7 +78,7 @@ enum EdgeStyle: String, CaseIterable, Identifiable {
     case straight, curved
 
     var id: String { rawValue }
-    var title: String { self == .straight ? "Прямая" : "Изогнутая" }
+    var title: String { self == .straight ? tr("Прямая") : tr("Изогнутая") }
     var icon: String { self == .straight ? "line.diagonal" : "point.topleft.down.to.point.bottomright.curvepath" }
 }
 
@@ -89,9 +89,9 @@ enum EdgeHead: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .arrow: "Стрелка"
-        case .dot: "Точка"
-        case .none: "Без наконечника"
+        case .arrow: tr("Стрелка")
+        case .dot: tr("Точка")
+        case .none: tr("Без наконечника")
         }
     }
 
@@ -153,7 +153,7 @@ final class Node {
 
     var hasTitle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    var displayTitle: String { hasTitle ? title : "Новая заметка" }
+    var displayTitle: String { hasTitle ? title : tr("Новая заметка") }
 
     var sortedBlocks: [NoteBlock] { blocks.sorted { $0.order < $1.order } }
 

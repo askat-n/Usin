@@ -3,6 +3,8 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(Workspace.self) private var ws
+    @Environment(SyncEngine.self) private var sync
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var nodes: [Node]
 
     var body: some View {
@@ -23,6 +25,25 @@ struct ContentView: View {
         .sheet(isPresented: $ws.showAllNotes) {
             AllNotesView()
         }
+        .sheet(isPresented: $ws.showSettings) {
+            SettingsView()
+        }
+        // Синхронизация: при запуске, при возвращении в приложение, после правок и каждые 20 секунд.
+        .task {
+            await sync.syncNow()
+            sync.startPeriodic()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await sync.syncNow() }
+                sync.startPeriodic()
+            } else {
+                sync.stopPeriodic()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+            sync.scheduleSync()
+        }
     }
 }
 
@@ -35,7 +56,7 @@ struct TabBar: View {
     var body: some View {
         let byID = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         HStack(spacing: 6) {
-            TabChip(title: "Холст", icon: "circle.hexagongrid", active: ws.activeTab == nil) {
+            TabChip(title: tr("Холст"), icon: "circle.hexagongrid", active: ws.activeTab == nil) {
                 ws.activeTab = nil
             }
             if !ws.openTabs.isEmpty {
@@ -56,8 +77,9 @@ struct TabBar: View {
                     }
                 }
             }
-            ToolButton(icon: "plus", help: "Новая заметка во вкладке (⌘T)") { ws.newNoteTab() }
-            ToolButton(icon: "magnifyingglass", help: "Все заметки (⌘K)") { ws.showAllNotes = true }
+            ToolButton(icon: "plus", help: tr("Новая заметка во вкладке (⌘T)")) { ws.newNoteTab() }
+            ToolButton(icon: "magnifyingglass", help: tr("Все заметки (⌘K)")) { ws.showAllNotes = true }
+            ToolButton(icon: "gearshape", help: tr("Настройки")) { ws.showSettings = true }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
@@ -92,7 +114,7 @@ struct TabChip: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help("Закрыть вкладку")
+                .help(tr("Закрыть вкладку"))
             }
         }
         .font(.subheadline.weight(active ? .semibold : .regular))
@@ -155,18 +177,18 @@ struct AllNotesView: View {
             .overlay {
                 if results.isEmpty {
                     if query.isEmpty {
-                        ContentUnavailableView("Пока нет заметок", systemImage: "note.text",
-                                               description: Text("Дважды нажми на холст, чтобы создать первую"))
+                        ContentUnavailableView(tr("Пока нет заметок"), systemImage: "note.text",
+                                               description: Text(tr("Удержи палец на пустом месте холста, чтобы создать первую")))
                     } else {
                         ContentUnavailableView.search(text: query)
                     }
                 }
             }
-            .searchable(text: $query, prompt: "Поиск по заметкам")
-            .navigationTitle("Все заметки")
+            .searchable(text: $query, prompt: tr("Поиск по заметкам"))
+            .navigationTitle(tr("Все заметки"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Готово") { dismiss() }
+                    Button(tr("Готово")) { dismiss() }
                 }
             }
         }

@@ -18,7 +18,7 @@ struct NoteEditorView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
 
-                TextField("Название", text: $node.title, axis: .vertical)
+                TextField(tr("Название"), text: $node.title, axis: .vertical)
                     .font(.system(size: 34, weight: .bold))
                     .textFieldStyle(.plain)
                     .focused($titleFocused)
@@ -91,13 +91,13 @@ struct NoteEditorView: View {
             Button {
                 ws.showOnCanvas(node)
             } label: {
-                Label("На холсте", systemImage: "scope")
+                Label(tr("На холсте"), systemImage: "scope")
             }
             .buttonStyle(.plain)
             .font(.subheadline)
             .foregroundStyle(.secondary)
             Menu {
-                Button("Удалить заметку", systemImage: "trash", role: .destructive) { ws.delete(node) }
+                Button(tr("Удалить заметку"), systemImage: "trash", role: .destructive) { ws.delete(node) }
             } label: {
                 Image(systemName: "ellipsis")
                     .frame(width: 30, height: 30)

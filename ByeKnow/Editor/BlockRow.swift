@@ -36,7 +36,7 @@ struct BlockRow: View {
     private var content: some View {
         switch block.kind {
         case .text:
-            TextField("Пиши… или «/» для блоков", text: $block.text, axis: .vertical)
+            TextField(tr("Пиши… или «/» для блоков"), text: $block.text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.body)
                 .lineSpacing(3)
@@ -46,7 +46,7 @@ struct BlockRow: View {
                 .onSubmit { handleReturn() }
 
         case .heading:
-            TextField("Заголовок", text: $block.text, axis: .vertical)
+            TextField(tr("Заголовок"), text: $block.text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.title2.bold())
                 .focused(focus, equals: block.id)
@@ -63,7 +63,7 @@ struct BlockRow: View {
                         .frame(height: 22)
                 }
                 .buttonStyle(.plain)
-                TextField("Пункт", text: $block.text, axis: .vertical)
+                TextField(tr("Пункт"), text: $block.text, axis: .vertical)
                     .textFieldStyle(.plain)
                     .strikethrough(block.isChecked)
                     .foregroundStyle(block.isChecked ? .secondary : .primary)
@@ -113,7 +113,7 @@ struct BlockRow: View {
                 )
                 .presentationCompactAdaptation(.popover)
             }
-            .help("Нажми — меню. Потяни — переставить строку")
+            .help(tr("Нажми — меню. Потяни — переставить строку"))
     }
 
     // MARK: - Conversion
@@ -130,10 +130,10 @@ struct BlockRow: View {
 
     private var conversionHint: String? {
         if block.kind == .image && block.imageData != nil {
-            return "Картинку нельзя превратить в другой блок — иначе она пропадёт"
+            return tr("Картинку нельзя превратить в другой блок — иначе она пропадёт")
         }
         if hasText && block.kind != .image && block.kind != .divider {
-            return "Картинка и разделитель недоступны: в строке есть текст"
+            return tr("Картинка и разделитель недоступны: в строке есть текст")
         }
         return nil
     }
@@ -195,7 +195,7 @@ struct BlockMenu: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Превратить в")
+            Text(tr("Превратить в"))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 14)
@@ -214,8 +214,8 @@ struct BlockMenu: View {
                     .padding(.vertical, 6)
             }
             Divider().padding(.vertical, 4)
-            row("Добавить строку ниже", icon: "plus", action: onAddBelow)
-            row("Удалить", icon: "trash", destructive: true, action: onDelete)
+            row(tr("Добавить строку ниже"), icon: "plus", action: onAddBelow)
+            row(tr("Удалить"), icon: "trash", destructive: true, action: onDelete)
         }
         .font(.callout)
         .padding(.bottom, 6)
@@ -289,7 +289,7 @@ struct ImageBlock: View {
                     .frame(maxHeight: 460)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .contextMenu {
-                        Button("Заменить из Фото", systemImage: "photo") { block.imageData = nil }
+                        Button(tr("Заменить из Фото"), systemImage: "photo") { block.imageData = nil }
                     }
             } else {
                 placeholder
@@ -318,10 +318,10 @@ struct ImageBlock: View {
     private var placeholder: some View {
         HStack(spacing: 10) {
             PhotosPicker(selection: $pickerItem, matching: .images) {
-                Label("Из Фото", systemImage: "photo.on.rectangle")
+                Label(tr("Из Фото"), systemImage: "photo.on.rectangle")
             }
             Button { importing = true } label: {
-                Label("Из файла", systemImage: "folder")
+                Label(tr("Из файла"), systemImage: "folder")
             }
         }
         .buttonStyle(.bordered)
@@ -333,7 +333,7 @@ struct ImageBlock: View {
                               style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
         )
         .overlay(alignment: .bottom) {
-            Text("или перетащи картинку сюда")
+            Text(tr("или перетащи картинку сюда"))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 8)
@@ -372,11 +372,11 @@ struct LinkBlock: View {
                 .onSubmit(onSubmit)
             if let url = block.url {
                 Link(destination: url) {
-                    Label(url.host() ?? "Открыть", systemImage: "arrow.up.right")
+                    Label(url.host() ?? tr("Открыть"), systemImage: "arrow.up.right")
                         .font(.caption.weight(.medium))
                         .lineLimit(1)
                 }
-                .help("Открыть ссылку")
+                .help(tr("Открыть ссылку"))
             }
         }
         .padding(.horizontal, 12)
