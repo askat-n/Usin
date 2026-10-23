@@ -44,6 +44,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
             sync.scheduleSync()
         }
+        // Возврат из браузера после входа в Google — в это же окно, не в новое.
+        .onOpenURL { url in sync.handleRedirect(url) }
+        .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
     }
 }
 

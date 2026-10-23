@@ -2,6 +2,9 @@ import Foundation
 import SwiftData
 import SwiftUI
 import AuthenticationServices
+#if os(macOS)
+import AppKit
+#endif
 
 /// Синхронизация заметок через скрытую папку приложения на Google Drive.
 @Observable
@@ -27,6 +30,8 @@ final class SyncEngine {
     var needsReplaceConfirmation = false
 
     private var isApplying = false
+    private var connectAttempt = 0
+    private var browserContinuation: CheckedContinuation<URL, Error>?
     private var pending = false
     private var debounceTask: Task<Void, Never>?
     private var periodicTask: Task<Void, Never>?
@@ -43,8 +48,15 @@ final class SyncEngine {
 
     func connect(using session: WebAuthenticationSession) async {
         status = .connecting
+        connectAttempt += 1
+        let attempt = connectAttempt
         do {
+            #if os(macOS)
+            try await signInInBrowser(attempt: attempt)
+            #else
             try await auth.signIn(using: session)
+            #endif
+            guard attempt == connectAttempt else { return } // нажали «Отмена»
             email = auth.email
             let remote = try await fetchRemote().snapshot
             let local = SyncSnapshot.current(in: context)
@@ -56,10 +68,48 @@ final class SyncEngine {
             finishConnecting()
             await syncNow()
         } catch {
+            guard attempt == connectAttempt else { return }
             auth.signOut()
             email = nil
             status = Self.isCancel(error) ? .off : .failed(Self.message(for: error))
         }
+    }
+
+    /// Отменить подключение, пока ждём входа в Google.
+    func cancelConnecting() {
+        connectAttempt += 1
+        browserContinuation?.resume(throwing: CancellationError())
+        browserContinuation = nil
+        auth.signOut()
+        email = nil
+        status = .off
+    }
+
+    #if os(macOS)
+    /// Mac: вход в обычном браузере. Google возвращает в приложение адрес
+    /// `com.googleusercontent.apps…:/oauthredirect?code=…`, его ловит `handleRedirect`.
+    private func signInInBrowser(attempt: Int) async throws {
+        let request = auth.makeSignInRequest()
+        let callback: URL = try await withCheckedThrowingContinuation { continuation in
+            browserContinuation = continuation
+            NSWorkspace.shared.open(request.url)
+            // Не ждать вечно: через 5 минут считаем, что вход отменён.
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(300))
+                guard let self, self.connectAttempt == attempt, let c = self.browserContinuation else { return }
+                self.browserContinuation = nil
+                c.resume(throwing: CancellationError())
+            }
+        }
+        try await auth.finishSignIn(callback: callback, verifier: request.verifier)
+    }
+    #endif
+
+    /// Браузер вернул нас в приложение после входа в Google.
+    func handleRedirect(_ url: URL) {
+        guard url.scheme == GoogleConfig.redirectScheme, let continuation = browserContinuation else { return }
+        browserContinuation = nil
+        continuation.resume(returning: url)
     }
 
     /// «Да, стереть и подключить»: всё на устройстве заменяется заметками с Drive.

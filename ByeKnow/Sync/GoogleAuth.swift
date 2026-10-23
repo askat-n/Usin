@@ -41,8 +41,8 @@ final class GoogleAuth {
     /// Токен сохранён на устройстве — значит, Drive подключён.
     var isSignedIn: Bool { Keychain.read(Self.refreshKey) != nil }
 
-    /// Открывает окно входа Google. Токен пока держим в памяти — сохраняем только после `persist()`.
-    func signIn(using session: WebAuthenticationSession) async throws {
+    /// Адрес страницы входа Google и проверочный код к нему (PKCE).
+    func makeSignInRequest() -> (url: URL, verifier: String) {
         let verifier = Self.randomString(64)
         let challenge = Self.base64url(Data(SHA256.hash(data: Data(verifier.utf8))))
 
@@ -56,8 +56,19 @@ final class GoogleAuth {
             URLQueryItem(name: "code_challenge_method", value: "S256"),
             URLQueryItem(name: "prompt", value: "select_account"),
         ]
+        return (components.url!, verifier)
+    }
 
-        let callback = try await session.authenticate(using: components.url!, callbackURLScheme: GoogleConfig.redirectScheme)
+    /// iPhone/iPad: окно входа Google внутри приложения.
+    func signIn(using session: WebAuthenticationSession) async throws {
+        let request = makeSignInRequest()
+        let callback = try await session.authenticate(using: request.url, callbackURLScheme: GoogleConfig.redirectScheme)
+        try await finishSignIn(callback: callback, verifier: request.verifier)
+    }
+
+    /// Google вернул в приложение адрес с кодом — меняем код на токен.
+    /// Токен пока держим в памяти — сохраняем только после `persist()`.
+    func finishSignIn(callback: URL, verifier: String) async throws {
         guard let code = URLComponents(url: callback, resolvingAgainstBaseURL: false)?
             .queryItems?.first(where: { $0.name == "code" })?.value else { throw SyncError.noAuthCode }
 

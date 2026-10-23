@@ -107,12 +107,24 @@ struct SettingsView: View {
                 Label(tr("Отключить Google Drive"), systemImage: "xmark.circle")
             }
         } else {
-            Button {
-                Task { await sync.connect(using: webAuth) }
-            } label: {
-                Label(tr("Подключить Google Drive"), systemImage: "link")
+            if sync.status == .connecting {
+                #if os(macOS)
+                Text(tr("Войди в Google в открывшемся окне браузера — потом приложение подключится само."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                #endif
+                Button(role: .cancel) {
+                    sync.cancelConnecting()
+                } label: {
+                    Label(tr("Отмена"), systemImage: "xmark")
+                }
+            } else {
+                Button {
+                    Task { await sync.connect(using: webAuth) }
+                } label: {
+                    Label(tr("Подключить Google Drive"), systemImage: "link")
+                }
             }
-            .disabled(sync.status == .connecting)
         }
 
         Text(tr("Заметки хранятся в скрытой папке приложения на твоём Google Drive и одинаковы на iPhone, iPad и Mac. Если переустановить приложение, просто подключи Drive снова — всё вернётся."))

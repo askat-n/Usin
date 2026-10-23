@@ -205,4 +205,6 @@ private let englishStrings: [String: String] = [
     "Нет": "No",
     "Войди в Google ещё раз": "Sign in to Google again",
     "Нет интернета или Google не отвечает": "No internet or Google is not responding",
+    "Войди в Google в открывшемся окне браузера — потом приложение подключится само.":
+        "Sign in to Google in the browser window that opened — the app will connect by itself afterwards.",
 ]
