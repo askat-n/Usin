@@ -6,16 +6,18 @@ struct ConnectionView: View {
     let selected: Bool
     let scale: CGFloat
     var cosmos = false
+    var terminal = false
 
     var body: some View {
         let k = max(0.6, min(scale, 1.5))
         let color: Color = {
             if connection.colorIndex != 0 { return Palette.swatch(connection.colorIndex).ink }
+            if terminal { return Term.green }
             return cosmos ? Cosmos.defaultGlow : .secondary
         }()
         let style = StrokeStyle(
-            lineWidth: (selected ? 2.6 : (cosmos ? 1.4 : 1.8)) * k,
-            lineCap: .round,
+            lineWidth: (selected ? 2.2 : (terminal ? 1 : (cosmos ? 1.4 : 1.8))) * k,
+            lineCap: terminal ? .butt : .round,
             lineJoin: .round,
             dash: connection.dashed ? [6 * k, 5 * k] : []
         )
@@ -26,12 +28,12 @@ struct ConnectionView: View {
                 geometry.path.stroke(color.opacity(selected ? 0.18 : 0.08), style: StrokeStyle(lineWidth: 10 * k, lineCap: .round))
                 geometry.path.stroke(color.opacity(selected ? 0.3 : 0.15), style: StrokeStyle(lineWidth: 5 * k, lineCap: .round))
             } else if selected {
-                geometry.path.stroke(Color.accentColor.opacity(0.18), lineWidth: 10 * k)
+                geometry.path.stroke((terminal ? Term.green : Color.accentColor).opacity(0.18), lineWidth: 10 * k)
             }
-            geometry.path.stroke(cosmos ? color.opacity(0.75) : color, style: style)
+            geometry.path.stroke(terminal ? color.opacity(0.6) : (cosmos ? color.opacity(0.75) : color), style: style)
             switch connection.head {
             case .arrow:
-                geometry.arrowHead(size: 12 * k).fill(color)
+                geometry.arrowHead(size: (terminal ? 9 : 12) * k).fill(color)
             case .dot:
                 geometry.dot(radius: 4 * k).fill(color)
             case .none:

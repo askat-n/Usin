@@ -34,9 +34,9 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    if settings.isCosmos {
+                    if settings.canvasStyle.isDark {
                         Toggle(tr("Анимация"), isOn: $settings.cosmosMotion)
-                        Text(tr("В стиле «Космос» оформление всегда тёмное.") + " " + tr("Без анимации холст не тратит батарею."))
+                        Text(tr("Тёмные стили всегда в тёмном оформлении.") + " " + tr("Без анимации холст не тратит батарею."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {

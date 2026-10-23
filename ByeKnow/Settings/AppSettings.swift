@@ -30,10 +30,20 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 }
 
 enum CanvasStyle: String, CaseIterable, Identifiable {
-    case cosmos, classic
+    case cosmos, terminal, classic
 
     var id: String { rawValue }
-    var title: String { self == .cosmos ? tr("Космос") : tr("Классический") }
+
+    var title: String {
+        switch self {
+        case .cosmos: tr("Космос")
+        case .terminal: tr("Терминал")
+        case .classic: tr("Классический")
+        }
+    }
+
+    /// Тёмные стили всегда в тёмном оформлении и с анимацией.
+    var isDark: Bool { self != .classic }
 }
 
 /// Настройки, которые человек меняет под себя. Хранятся на устройстве.
@@ -72,14 +82,15 @@ final class AppSettings {
     }
 
     var isCosmos: Bool { canvasStyle == .cosmos }
+    var isTerminal: Bool { canvasStyle == .terminal }
 
-    /// Движение в «Космосе»: плавающие заметки, звёзды, огоньки на стрелках.
+    /// Движение в тёмных стилях: звёзды, огоньки на стрелках, курсор, развёртка.
     var cosmosMotion: Bool {
         didSet { defaults.set(cosmosMotion, forKey: "settings.cosmosMotion") }
     }
 
-    /// В «Космосе» оформление всегда тёмное.
-    var effectiveColorScheme: ColorScheme? { isCosmos ? .dark : appearance.colorScheme }
+    /// В «Космосе» и «Терминале» оформление всегда тёмное.
+    var effectiveColorScheme: ColorScheme? { canvasStyle.isDark ? .dark : appearance.colorScheme }
 
     private init() {
         let systemIsRussian = Locale.preferredLanguages.first?.hasPrefix("ru") ?? true
@@ -263,5 +274,7 @@ private let englishStrings: [String: String] = [
     "Стиль холста": "Canvas style",
     "В стиле «Космос» оформление всегда тёмное.": "The Cosmos style is always dark.",
     "Анимация": "Animation",
+    "Терминал": "Terminal",
+    "Тёмные стили всегда в тёмном оформлении.": "Dark styles are always in dark appearance.",
     "Без анимации холст не тратит батарею.": "Without animation the canvas doesn't use battery.",
 ]

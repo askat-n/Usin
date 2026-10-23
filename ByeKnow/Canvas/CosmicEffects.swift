@@ -35,7 +35,11 @@ extension View {
     /// движущимся фоном пришлось бы перерисовывать каждый кадр. В классическом — стекло.
     @ViewBuilder
     func panelBackground() -> some View {
-        if AppSettings.shared.isCosmos {
+        if AppSettings.shared.isTerminal {
+            self
+                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Term.panel.opacity(0.96)))
+                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Term.green.opacity(0.35), lineWidth: 1))
+        } else if AppSettings.shared.isCosmos {
             self
                 .background(Capsule().fill(Color(hex: 0x131A2C).opacity(0.95)))
                 .overlay(Capsule().stroke(Color.white.opacity(0.09), lineWidth: 1))

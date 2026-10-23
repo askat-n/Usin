@@ -75,7 +75,7 @@ struct NoteEditorView: View {
             .frame(maxWidth: 760, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
-        .background(Color.editor)
+        .background(AppSettings.shared.isTerminal ? Term.bg : Color.editor)
         #if os(iOS)
         .scrollDismissesKeyboard(.interactively)
         #endif

@@ -2,6 +2,14 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    private var appBackground: Color {
+        switch AppSettings.shared.canvasStyle {
+        case .cosmos: Cosmos.deep
+        case .terminal: Term.bg
+        case .classic: Color.canvas
+        }
+    }
+
     @Environment(Workspace.self) private var ws
     @Environment(SyncEngine.self) private var sync
     @Environment(\.scenePhase) private var scenePhase
@@ -24,7 +32,10 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         // Под холстом (у полоски «домой» на iPhone) — тот же фон, без чёрной или белой полосы.
-        .background((AppSettings.shared.isCosmos ? Cosmos.deep : Color.canvas).ignoresSafeArea())
+        .background(appBackground.ignoresSafeArea())
+        // «Терминал»: моноширинный шрифт и зелёный акцент во всём приложении.
+        .fontDesign(AppSettings.shared.isTerminal ? .monospaced : nil)
+        .tint(AppSettings.shared.isTerminal ? Term.green : nil)
         .sheet(isPresented: $ws.showAllNotes) {
             AllNotesView()
         }

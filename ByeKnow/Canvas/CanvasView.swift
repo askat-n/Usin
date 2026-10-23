@@ -47,7 +47,8 @@ struct CanvasView: View {
                             connection: c,
                             selected: ws.selection == .connection(c.id),
                             scale: t.scale,
-                            cosmos: AppSettings.shared.isCosmos
+                            cosmos: AppSettings.shared.isCosmos,
+                            terminal: AppSettings.shared.isTerminal
                         )
                         .opacity(isDimmed(a) || isDimmed(b) ? 0.12 : 1)
                         .onTapGesture { ws.select(.connection(c.id)) }
@@ -65,10 +66,17 @@ struct CanvasView: View {
 
                 if AppSettings.shared.isCosmos {
                     cosmicLayers(t, byID: byID)
+                } else if AppSettings.shared.isTerminal {
+                    terminalLayers(t, byID: byID)
                 }
 
                 ForEach(nodes) { node in
                     nodeView(node, t)
+                }
+
+                if AppSettings.shared.isTerminal, let root = nodes.first(where: \.isRoot),
+                   ws.editingTitleID != root.id {
+                    terminalCaret(root, t)
                 }
 
                 if let p = press, !p.moved, !p.fired {
@@ -123,7 +131,9 @@ struct CanvasView: View {
     /// удержал палец на месте (время — в настройках) — новая заметка.
     private func background(_ t: CanvasTransform) -> some View {
         ZStack {
-            if AppSettings.shared.isCosmos {
+            if AppSettings.shared.isTerminal {
+                TerminalBackground(transform: t, animate: animate, showGrid: AppSettings.shared.showGrid)
+            } else if AppSettings.shared.isCosmos {
                 CosmicBackground(transform: t, animate: animate, showGrid: AppSettings.shared.showGrid)
             } else {
                 Color.canvas
@@ -209,6 +219,31 @@ struct CanvasView: View {
             CosmicOrb(center: t.toScreen(root.position), diameter: root.size.width * t.scale, scale: t.scale,
                       base: root.glowColor, animate: animate)
         }
+    }
+
+    /// «Пакеты данных» на стрелках и мигающий курсор у сферы — на Core Animation.
+    @ViewBuilder
+    private func terminalLayers(_ t: CanvasTransform, byID: [UUID: Node]) -> some View {
+        let k = max(0.6, min(t.scale, 1.5))
+        let edges: [TerminalFlows.Edge] = connections.compactMap { c in
+            guard let a = byID[c.fromID], let b = byID[c.toID] else { return nil }
+            let g = EdgeGeometry(from: a, to: b, connection: c, transform: t)
+            return TerminalFlows.Edge(id: c.id, path: g.path, width: 2.4 * k,
+                                      opacity: isDimmed(a) || isDimmed(b) ? 0.12 : 1,
+                                      color: c.colorIndex == 0 ? Term.green : Palette.swatch(c.colorIndex).ink)
+        }
+        TerminalFlows(edges: edges, animate: animate)
+    }
+
+    /// Курсор сразу после надписи на сфере (шрифт моноширинный — ширину легко посчитать).
+    private func terminalCaret(_ root: Node, _ t: CanvasTransform) -> some View {
+        let fontSize: CGFloat = 20
+        let textWidth = CGFloat(min(root.title.count, 10)) * fontSize * Term.charWidth
+        let c = t.toScreen(root.position)
+        let rect = CGRect(x: c.x + (textWidth / 2 + 3) * t.scale, y: c.y - fontSize * 0.55 * t.scale,
+                          width: fontSize * 0.55 * t.scale, height: fontSize * 1.1 * t.scale)
+        return TerminalCaret(rect: rect, color: Term.ink(root.inkIndex), animate: animate)
+            .opacity(isDimmed(root) ? 0.15 : 1)
     }
 
     // MARK: - Nodes

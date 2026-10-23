@@ -10,6 +10,13 @@ struct NodeView: View {
     @FocusState private var focused: Bool
 
     private var cosmos: Bool { AppSettings.shared.isCosmos }
+    private var terminal: Bool { AppSettings.shared.isTerminal }
+
+    /// В «Терминале» у карточек почти прямые углы, круг остаётся кругом.
+    private var outline: AnyShape {
+        if node.isRoot || node.shape == .circle { return AnyShape(Circle()) }
+        return terminal ? AnyShape(RoundedRectangle(cornerRadius: 3, style: .continuous)) : node.shape.outline
+    }
 
     /// Цвет свечения заметки в «Космосе».
     private var glow: Color { node.glowColor }
@@ -25,6 +32,7 @@ struct NodeView: View {
     // MARK: Content
 
     private var ink: Color {
+        if terminal { return Term.ink(node.inkIndex) }
         if node.isRoot && node.inkIndex == 0 { return .white }
         return Palette.swatch(node.inkIndex).ink
     }
@@ -32,9 +40,9 @@ struct NodeView: View {
     private var content: some View {
         VStack(spacing: 5) {
             if let theme = node.theme, !node.isRoot {
-                Text(theme.name.uppercased())
-                    .font(.system(size: 9, weight: .bold))
-                    .tracking(0.6)
+                Text(terminal ? "[\(theme.name.lowercased())]" : theme.name.uppercased())
+                    .font(.system(size: terminal ? 10 : 9, weight: .bold, design: terminal ? .monospaced : .default))
+                    .tracking(terminal ? 0 : 0.6)
                     .foregroundStyle(Palette.swatch(theme.colorIndex).ink)
                     .lineLimit(1)
             }
@@ -60,8 +68,8 @@ struct NodeView: View {
             }
         }
         .font(node.isRoot
-              ? .system(size: 22, weight: .bold, design: .rounded)
-              : .system(size: 15, weight: .medium))
+              ? .system(size: terminal ? 20 : 22, weight: .bold, design: terminal ? .monospaced : .rounded)
+              : .system(size: terminal ? 14 : 15, weight: .medium, design: terminal ? .monospaced : .default))
         .foregroundStyle(ink)
         .multilineTextAlignment(.center)
         .padding(node.isRoot || node.shape == .circle ? 24 : 14)
@@ -71,10 +79,29 @@ struct NodeView: View {
 
     @ViewBuilder
     private func background(_ size: CGSize) -> some View {
-        if cosmos {
+        if terminal {
+            terminalBackground
+        } else if cosmos {
             cosmicBackground(size)
         } else {
             classicBackground(size)
+        }
+    }
+
+    /// «Терминал»: чёрное окно с тонкой рамкой; сфера — круг с двойной рамкой.
+    @ViewBuilder
+    private var terminalBackground: some View {
+        // Сфера в «Терминале» всегда зелёная — как приглашение командной строки.
+        let color = node.isRoot ? Term.green : Term.ink(node.fillIndex)
+        if node.isRoot {
+            Circle()
+                .fill(Term.bg)
+                .overlay(Circle().stroke(color, lineWidth: 1.5))
+                .overlay(Circle().inset(by: 7).stroke(color.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [3, 4])))
+        } else {
+            outline
+                .fill(Term.panel.opacity(0.94))
+                .overlay(outline.stroke(color.opacity(0.85), lineWidth: 1))
         }
     }
 
@@ -125,15 +152,16 @@ struct NodeView: View {
 
     @ViewBuilder
     private var ring: some View {
-        let outline = node.isRoot ? AnyShape(Circle()) : node.shape.outline
         if selected {
             outline
-                .stroke(cosmos ? Color.white.opacity(0.9) : Color.accentColor, lineWidth: cosmos ? 1.5 : 2)
+                .stroke(terminal ? Term.green : (cosmos ? Color.white.opacity(0.9) : Color.accentColor),
+                        lineWidth: terminal ? 1 : (cosmos ? 1.5 : 2))
                 .padding(-5)
                 .shadow(color: cosmos ? glow : .clear, radius: 8)
         } else if isOpen {
             outline
-                .stroke(Color.accentColor.opacity(0.55), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                .stroke((terminal ? Term.green : Color.accentColor).opacity(0.55),
+                        style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                 .padding(-5)
         }
     }
