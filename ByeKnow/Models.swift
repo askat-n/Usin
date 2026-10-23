@@ -1,0 +1,252 @@
+import Foundation
+import SwiftData
+import SwiftUI
+
+// MARK: - Enums
+
+enum NodeShape: String, CaseIterable, Identifiable {
+    case card, circle, square, sticker
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .card: "Карточка"
+        case .circle: "Круг"
+        case .square: "Квадрат"
+        case .sticker: "Стикер"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .card: "rectangle"
+        case .circle: "circle"
+        case .square: "square"
+        case .sticker: "note.text"
+        }
+    }
+
+    var size: CGSize {
+        switch self {
+        case .card: CGSize(width: 200, height: 84)
+        case .circle: CGSize(width: 140, height: 140)
+        case .square: CGSize(width: 150, height: 150)
+        case .sticker: CGSize(width: 170, height: 160)
+        }
+    }
+
+    var outline: AnyShape {
+        switch self {
+        case .circle: AnyShape(Circle())
+        case .card: AnyShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        case .square: AnyShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        case .sticker: AnyShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+        }
+    }
+}
+
+enum BlockKind: String, CaseIterable, Identifiable {
+    case text, heading, checklist, image, link, divider
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .text: "Текст"
+        case .heading: "Заголовок"
+        case .checklist: "Чек-лист"
+        case .image: "Картинка"
+        case .link: "Ссылка"
+        case .divider: "Разделитель"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .text: "text.alignleft"
+        case .heading: "textformat.size"
+        case .checklist: "checklist"
+        case .image: "photo"
+        case .link: "link"
+        case .divider: "minus"
+        }
+    }
+}
+
+enum EdgeStyle: String, CaseIterable, Identifiable {
+    case straight, curved
+
+    var id: String { rawValue }
+    var title: String { self == .straight ? "Прямая" : "Изогнутая" }
+    var icon: String { self == .straight ? "line.diagonal" : "point.topleft.down.to.point.bottomright.curvepath" }
+}
+
+enum EdgeHead: String, CaseIterable, Identifiable {
+    case arrow, dot, none
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .arrow: "Стрелка"
+        case .dot: "Точка"
+        case .none: "Без наконечника"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .arrow: "arrow.right"
+        case .dot: "circle.fill"
+        case .none: "minus"
+        }
+    }
+}
+
+// MARK: - Models
+
+@Model
+final class Theme {
+    var id: UUID = UUID()
+    var name: String = ""
+    var colorIndex: Int = 1
+    var order: Int = 0
+    @Relationship(deleteRule: .nullify, inverse: \Node.theme)
+    var nodes: [Node] = []
+
+    init(name: String, colorIndex: Int, order: Int) {
+        self.name = name
+        self.colorIndex = colorIndex
+        self.order = order
+    }
+}
+
+@Model
+final class Node {
+    var id: UUID = UUID()
+    var title: String = ""
+    var x: Double = 0
+    var y: Double = 0
+    var shapeRaw: String = "card"
+    var fillIndex: Int = 0
+    var inkIndex: Int = 0
+    var isRoot: Bool = false
+    var createdAt: Date = Date()
+    var theme: Theme?
+    @Relationship(deleteRule: .cascade, inverse: \NoteBlock.node)
+    var blocks: [NoteBlock] = []
+
+    init(position: CGPoint) {
+        x = position.x
+        y = position.y
+    }
+
+    var shape: NodeShape {
+        get { NodeShape(rawValue: shapeRaw) ?? .card }
+        set { shapeRaw = newValue.rawValue }
+    }
+
+    var position: CGPoint { CGPoint(x: x, y: y) }
+
+    var size: CGSize { isRoot ? CGSize(width: 170, height: 170) : shape.size }
+
+    var displayTitle: String { title.isEmpty ? "Новая заметка" : title }
+
+    var sortedBlocks: [NoteBlock] { blocks.sorted { $0.order < $1.order } }
+
+    var preview: String {
+        sortedBlocks.first { ($0.kind == .text || $0.kind == .checklist) && !$0.text.isEmpty }?.text ?? ""
+    }
+
+    func contains(_ point: CGPoint) -> Bool {
+        abs(point.x - x) <= size.width / 2 && abs(point.y - y) <= size.height / 2
+    }
+
+    // MARK: Blocks
+
+    @discardableResult
+    func addBlock(_ kind: BlockKind, after block: NoteBlock? = nil, context: ModelContext) -> NoteBlock {
+        var list = sortedBlocks
+        let new = NoteBlock(kind: kind)
+        context.insert(new)
+        blocks.append(new)
+        let index = block.flatMap { b in list.firstIndex { $0.id == b.id } }.map { $0 + 1 } ?? list.count
+        list.insert(new, at: index)
+        renumber(list)
+        return new
+    }
+
+    func move(_ block: NoteBlock, by delta: Int) {
+        var list = sortedBlocks
+        guard let i = list.firstIndex(where: { $0.id == block.id }), list.indices.contains(i + delta) else { return }
+        list.swapAt(i, i + delta)
+        renumber(list)
+    }
+
+    func remove(_ block: NoteBlock, context: ModelContext) {
+        blocks.removeAll { $0.id == block.id }
+        context.delete(block)
+        renumber(sortedBlocks)
+    }
+
+    private func renumber(_ list: [NoteBlock]) {
+        for (i, b) in list.enumerated() where b.order != i { b.order = i }
+    }
+}
+
+@Model
+final class NoteBlock {
+    var id: UUID = UUID()
+    var order: Int = 0
+    var kindRaw: String = "text"
+    var text: String = ""
+    var isChecked: Bool = false
+    @Attribute(.externalStorage) var imageData: Data?
+    var node: Node?
+
+    init(kind: BlockKind) {
+        kindRaw = kind.rawValue
+    }
+
+    var kind: BlockKind {
+        get { BlockKind(rawValue: kindRaw) ?? .text }
+        set { kindRaw = newValue.rawValue }
+    }
+
+    var url: URL? {
+        let s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !s.isEmpty, !s.contains(" ") else { return nil }
+        let url = URL(string: s.contains("://") ? s : "https://" + s)
+        return url?.host() == nil ? nil : url
+    }
+}
+
+@Model
+final class Connection {
+    var id: UUID = UUID()
+    var fromID: UUID = UUID()
+    var toID: UUID = UUID()
+    var styleRaw: String = "straight"
+    var headRaw: String = "arrow"
+    var dashed: Bool = false
+    var colorIndex: Int = 0
+    var bendX: Double = 0
+    var bendY: Double = 0
+    var createdAt: Date = Date()
+
+    init(from: UUID, to: UUID) {
+        fromID = from
+        toID = to
+    }
+
+    var style: EdgeStyle {
+        get { EdgeStyle(rawValue: styleRaw) ?? .straight }
+        set { styleRaw = newValue.rawValue }
+    }
+
+    var head: EdgeHead {
+        get { EdgeHead(rawValue: headRaw) ?? .arrow }
+        set { headRaw = newValue.rawValue }
+    }
+}
