@@ -179,10 +179,10 @@ final class Node {
         return new
     }
 
-    func move(_ block: NoteBlock, by delta: Int) {
-        var list = sortedBlocks
-        guard let i = list.firstIndex(where: { $0.id == block.id }), list.indices.contains(i + delta) else { return }
-        list.swapAt(i, i + delta)
+    /// Переставить строку на позицию `index` (среди остальных строк).
+    func moveBlock(_ block: NoteBlock, to index: Int) {
+        var list = sortedBlocks.filter { $0.id != block.id }
+        list.insert(block, at: min(max(index, 0), list.count))
         renumber(list)
     }
 

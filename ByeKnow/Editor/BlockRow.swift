@@ -7,8 +7,14 @@ struct BlockRow: View {
     @Bindable var block: NoteBlock
     let node: Node
     var focus: FocusState<UUID?>.Binding
+    var isDragging = false
+    /// Тянут ≡: смещение пальца по вертикали.
+    var onReorder: (CGFloat) -> Void = { _ in }
+    var onReorderEnd: () -> Void = {}
 
     @Environment(\.modelContext) private var context
+    @State private var showMenu = false
+    @State private var lastReturnAt = Date.distantPast
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -36,6 +42,8 @@ struct BlockRow: View {
                 .lineSpacing(3)
                 .focused(focus, equals: block.id)
                 .padding(.vertical, 3)
+                .onChange(of: block.text) { _, new in splitOnReturn(new) }
+                .onSubmit { handleReturn() }
 
         case .heading:
             TextField("Заголовок", text: $block.text, axis: .vertical)
@@ -43,11 +51,8 @@ struct BlockRow: View {
                 .font(.title2.bold())
                 .focused(focus, equals: block.id)
                 .padding(.top, 10)
-                .onChange(of: block.text) { _, new in
-                    guard new.contains("\n") else { return }
-                    block.text = new.replacingOccurrences(of: "\n", with: "")
-                    insert(.text)
-                }
+                .onChange(of: block.text) { _, new in splitOnReturn(new) }
+                .onSubmit { handleReturn() }
 
         case .checklist:
             HStack(alignment: .top, spacing: 8) {
@@ -63,16 +68,8 @@ struct BlockRow: View {
                     .strikethrough(block.isChecked)
                     .foregroundStyle(block.isChecked ? .secondary : .primary)
                     .focused(focus, equals: block.id)
-                    .onChange(of: block.text) { _, new in
-                        guard new.contains("\n") else { return }
-                        let clean = new.replacingOccurrences(of: "\n", with: "")
-                        block.text = clean
-                        if clean.isEmpty {
-                            block.kind = .text // Enter на пустом пункте — выход из списка
-                        } else {
-                            insert(.checklist)
-                        }
-                    }
+                    .onChange(of: block.text) { _, new in splitOnReturn(new) }
+                    .onSubmit { handleReturn() }
             }
             .padding(.vertical, 3)
 
@@ -80,7 +77,7 @@ struct BlockRow: View {
             ImageBlock(block: block)
 
         case .link:
-            LinkBlock(block: block, focus: focus)
+            LinkBlock(block: block, focus: focus) { handleReturn() }
 
         case .divider:
             Rectangle()
@@ -90,38 +87,60 @@ struct BlockRow: View {
         }
     }
 
-    // MARK: - Handle menu
+    // MARK: - Handle: тап — меню, потянуть — переставить строку
 
     private var handle: some View {
-        Menu {
-            Section("Превратить в") {
-                ForEach(BlockKind.allCases) { kind in
-                    Button(kind.title, systemImage: kind.icon) { convert(to: kind) }
-                }
+        Image(systemName: "line.3.horizontal")
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(isDragging ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.quaternary))
+            .frame(width: 22, height: 26)
+            .contentShape(Rectangle().inset(by: -4))
+            .padding(.top, block.kind == .heading ? 12 : 1)
+            .gesture(
+                DragGesture(minimumDistance: 3, coordinateSpace: .global)
+                    .onChanged { v in onReorder(v.translation.height) }
+                    .onEnded { _ in onReorderEnd() }
+            )
+            .onTapGesture { showMenu = true }
+            .popover(isPresented: $showMenu) {
+                BlockMenu(
+                    current: block.kind,
+                    canConvert: canConvert(to:),
+                    hint: conversionHint,
+                    onConvert: { kind in showMenu = false; convert(to: kind) },
+                    onAddBelow: { showMenu = false; insert(.text) },
+                    onDelete: { showMenu = false; node.remove(block, context: context) }
+                )
+                .presentationCompactAdaptation(.popover)
             }
-            Button("Добавить блок ниже", systemImage: "plus") { insert(.text) }
-            Button("Выше", systemImage: "arrow.up") { node.move(block, by: -1) }
-            Button("Ниже", systemImage: "arrow.down") { node.move(block, by: 1) }
-            Divider()
-            Button("Удалить", systemImage: "trash", role: .destructive) { node.remove(block, context: context) }
-        } label: {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.quaternary)
-                .frame(width: 22, height: 26)
-                .contentShape(Rectangle())
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .padding(.top, block.kind == .heading ? 12 : 1)
+            .help("Нажми — меню. Потяни — переставить строку")
     }
 
-    // MARK: - Actions
+    // MARK: - Conversion
+
+    private var hasText: Bool { !block.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    /// Превращать можно только так, чтобы содержимое не пропало.
+    private func canConvert(to kind: BlockKind) -> Bool {
+        if kind == block.kind { return false }
+        if block.kind == .image && block.imageData != nil { return false }
+        if hasText && (kind == .image || kind == .divider) { return false }
+        return true
+    }
+
+    private var conversionHint: String? {
+        if block.kind == .image && block.imageData != nil {
+            return "Картинку нельзя превратить в другой блок — иначе она пропадёт"
+        }
+        if hasText && block.kind != .image && block.kind != .divider {
+            return "Картинка и разделитель недоступны: в строке есть текст"
+        }
+        return nil
+    }
 
     private func convert(to kind: BlockKind) {
         if block.text == "/" { block.text = "" }
+        guard kind == block.kind || canConvert(to: kind) else { return }
         block.kind = kind
         if kind == .divider {
             insert(.text)
@@ -130,9 +149,96 @@ struct BlockRow: View {
         }
     }
 
-    private func insert(_ kind: BlockKind) {
+    // MARK: - Enter
+
+    /// Enter приходит либо как перенос строки в тексте, либо как «отправить» (onSubmit) —
+    /// в обоих случаях делаем новую строку-блок.
+    /// Текст после курсора переезжает в новую строку.
+    private func splitOnReturn(_ new: String) {
+        guard let r = new.firstIndex(of: "\n") else { return }
+        let before = String(new[..<r])
+        let after = String(new[new.index(after: r)...]).replacingOccurrences(of: "\n", with: " ")
+        block.text = before
+        handleReturn(carry: after)
+    }
+
+    private func handleReturn(carry: String = "") {
+        // Одно нажатие может прийти и переносом, и onSubmit — считаем его один раз.
+        guard Date().timeIntervalSince(lastReturnAt) > 0.2 else { return }
+        lastReturnAt = Date()
+        // Enter на пустом пункте чек-листа — выход из списка.
+        if block.kind == .checklist && block.text.isEmpty && carry.isEmpty {
+            block.kind = .text
+            return
+        }
+        let next = insert(block.kind == .checklist ? .checklist : .text)
+        next.text = carry
+    }
+
+    @discardableResult
+    private func insert(_ kind: BlockKind) -> NoteBlock {
         let new = node.addBlock(kind, after: block, context: context)
         DispatchQueue.main.async { focus.wrappedValue = new.id }
+        return new
+    }
+}
+
+// MARK: - Block menu
+
+struct BlockMenu: View {
+    let current: BlockKind
+    let canConvert: (BlockKind) -> Bool
+    let hint: String?
+    let onConvert: (BlockKind) -> Void
+    let onAddBelow: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Превратить в")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+            ForEach(BlockKind.allCases) { kind in
+                row(kind.title, icon: kind.icon, checked: kind == current,
+                    enabled: kind == current || canConvert(kind)) { onConvert(kind) }
+            }
+            if let hint {
+                Text(hint)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+            }
+            Divider().padding(.vertical, 4)
+            row("Добавить строку ниже", icon: "plus", action: onAddBelow)
+            row("Удалить", icon: "trash", destructive: true, action: onDelete)
+        }
+        .font(.callout)
+        .padding(.bottom, 6)
+        .frame(width: 260)
+    }
+
+    private func row(_ title: String, icon: String, checked: Bool = false, enabled: Bool = true,
+                     destructive: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: icon).frame(width: 20)
+                Text(title)
+                Spacer()
+                if checked { Image(systemName: "checkmark").font(.caption.weight(.bold)) }
+            }
+            .foregroundStyle(destructive ? Color.red : Color.primary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.35)
     }
 }
 
@@ -248,6 +354,7 @@ struct ImageBlock: View {
 struct LinkBlock: View {
     @Bindable var block: NoteBlock
     var focus: FocusState<UUID?>.Binding
+    var onSubmit: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 10) {
@@ -262,6 +369,7 @@ struct LinkBlock: View {
                 .keyboardType(.URL)
                 #endif
                 .focused(focus, equals: block.id)
+                .onSubmit(onSubmit)
             if let url = block.url {
                 Link(destination: url) {
                     Label(url.host() ?? "Открыть", systemImage: "arrow.up.right")
