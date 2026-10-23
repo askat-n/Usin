@@ -121,6 +121,6 @@ struct TrashToast: View {
         .font(.callout)
         .padding(.horizontal, 18)
         .padding(.vertical, 11)
-        .glassEffect(.regular, in: .capsule)
+        .panelBackground()
     }
 }

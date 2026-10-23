@@ -8,17 +8,11 @@ struct NodeView: View {
     var onEndEditing: () -> Void
 
     @FocusState private var focused: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
 
     private var cosmos: Bool { AppSettings.shared.isCosmos }
-    /// Анимация только когда приложение на переднем плане — в фоне батарея не тратится.
-    private var animate: Bool { cosmos && AppSettings.shared.cosmosMotion && !reduceMotion && scenePhase == .active }
 
     /// Цвет свечения заметки в «Космосе».
-    private var glow: Color {
-        node.fillIndex == 0 ? Cosmos.defaultGlow : Palette.swatch(node.fillIndex).ink
-    }
+    private var glow: Color { node.glowColor }
 
     var body: some View {
         let size = node.size
@@ -26,7 +20,6 @@ struct NodeView: View {
             .frame(width: size.width, height: size.height)
             .background { background(size) }
             .overlay { ring }
-            .modifier(Floating(seed: node.id.seed, enabled: animate && !node.isRoot && !editing))
     }
 
     // MARK: Content
@@ -85,11 +78,12 @@ struct NodeView: View {
         }
     }
 
+    /// В «Космосе» сферу и свечение рисуют слои Core Animation под заметкой (CosmicOrb, CosmicFlows),
+    /// здесь — только стекло.
     @ViewBuilder
     private func cosmicBackground(_ size: CGSize) -> some View {
         if node.isRoot {
-            CosmicOrb(base: node.fillIndex == 0 ? Cosmos.defaultGlow : Palette.swatch(node.fillIndex).ink,
-                      size: size.width, animate: animate)
+            Color.clear
         } else {
             let shape = node.shape.outline
             shape
@@ -99,7 +93,6 @@ struct NodeView: View {
                 .overlay(shape.stroke(LinearGradient(colors: [glow.opacity(0.95), glow.opacity(0.2)],
                                                      startPoint: .topLeading, endPoint: .bottomTrailing),
                                       lineWidth: 1.2))
-                .shadow(color: glow.opacity(selected ? 0.75 : 0.35), radius: selected ? 20 : 12)
         }
     }
 

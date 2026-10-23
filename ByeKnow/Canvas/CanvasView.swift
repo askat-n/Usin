@@ -47,8 +47,7 @@ struct CanvasView: View {
                             connection: c,
                             selected: ws.selection == .connection(c.id),
                             scale: t.scale,
-                            cosmos: AppSettings.shared.isCosmos,
-                            animate: animate
+                            cosmos: AppSettings.shared.isCosmos
                         )
                         .opacity(isDimmed(a) || isDimmed(b) ? 0.12 : 1)
                         .onTapGesture { ws.select(.connection(c.id)) }
@@ -62,6 +61,10 @@ struct CanvasView: View {
                     }
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 5]))
                     .allowsHitTesting(false)
+                }
+
+                if AppSettings.shared.isCosmos {
+                    cosmicLayers(t, byID: byID)
                 }
 
                 ForEach(nodes) { node in
@@ -180,6 +183,32 @@ struct CanvasView: View {
     private func cancelHold() {
         holdTask?.cancel()
         press?.moved = true
+    }
+
+    // MARK: - Cosmos layers
+
+    /// Огоньки на стрелках, свечение заметок и живая сфера — на Core Animation.
+    @ViewBuilder
+    private func cosmicLayers(_ t: CanvasTransform, byID: [UUID: Node]) -> some View {
+        let k = max(0.6, min(t.scale, 1.5))
+        let edges: [CosmicFlows.Edge] = connections.compactMap { c in
+            guard let a = byID[c.fromID], let b = byID[c.toID] else { return nil }
+            let g = EdgeGeometry(from: a, to: b, connection: c, transform: t)
+            return CosmicFlows.Edge(id: c.id, path: g.path, width: 2.6 * k,
+                                    opacity: isDimmed(a) || isDimmed(b) ? 0.12 : 1)
+        }
+        let glows: [CosmicFlows.Glow] = nodes.filter { !$0.isRoot }.map { node in
+            let size = CGSize(width: node.size.width * t.scale, height: node.size.height * t.scale)
+            let c = t.toScreen(node.position)
+            let rect = CGRect(x: c.x - size.width / 2, y: c.y - size.height / 2, width: size.width, height: size.height)
+            return CosmicFlows.Glow(id: node.id, path: node.shape.outline.path(in: rect), color: node.glowColor,
+                                    radius: 14 * t.scale, opacity: isDimmed(node) ? 0.15 : 1, seed: node.id.seed)
+        }
+        CosmicFlows(edges: edges, glows: glows, animate: animate)
+        if let root = nodes.first(where: \.isRoot) {
+            CosmicOrb(center: t.toScreen(root.position), diameter: root.size.width * t.scale, scale: t.scale,
+                      base: root.glowColor, animate: animate)
+        }
     }
 
     // MARK: - Nodes
@@ -381,7 +410,7 @@ struct CanvasView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .glassEffect(.regular, in: .capsule)
+                    .panelBackground()
             }
         }
     }

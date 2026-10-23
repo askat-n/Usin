@@ -40,7 +40,7 @@ struct FloatingBar<Content: View>: View {
     var body: some View {
         HStack(spacing: 2) { content }
             .padding(5)
-            .glassEffect(.regular, in: .capsule)
+            .panelBackground()
     }
 }
 
@@ -224,7 +224,7 @@ struct FilterBar: View {
                 .help(tr("Новая тема"))
             }
             .padding(4)
-            .glassEffect(.regular, in: .capsule)
+            .panelBackground()
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity)
         }
@@ -287,7 +287,7 @@ struct ZoomControls: View {
             ToolButton(icon: "scope", help: tr("К сфере ByeKnow")) { ws.goHome() }
         }
         .padding(5)
-        .glassEffect(.regular, in: .capsule)
+        .panelBackground()
     }
 }
 

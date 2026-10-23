@@ -175,6 +175,9 @@ final class Node {
         sortedBlocks.first { ($0.kind == .text || $0.kind == .checklist) && !$0.text.isEmpty }?.text ?? ""
     }
 
+    /// Цвет свечения в стиле «Космос».
+    var glowColor: Color { fillIndex == 0 ? Cosmos.defaultGlow : Palette.swatch(fillIndex).ink }
+
     func contains(_ point: CGPoint) -> Bool {
         abs(point.x - x) <= size.width / 2 && abs(point.y - y) <= size.height / 2
     }

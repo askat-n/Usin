@@ -6,7 +6,6 @@ struct ConnectionView: View {
     let selected: Bool
     let scale: CGFloat
     var cosmos = false
-    var animate = true
 
     var body: some View {
         let k = max(0.6, min(scale, 1.5))
@@ -23,23 +22,18 @@ struct ConnectionView: View {
 
         ZStack {
             if cosmos {
-                // Мягкое свечение вокруг линии
-                geometry.path.stroke(color.opacity(selected ? 0.55 : 0.28), lineWidth: 7 * k)
-                    .blur(radius: 5)
+                // Мягкое свечение вокруг линии — два широких полупрозрачных штриха (без размытия, оно дорогое).
+                geometry.path.stroke(color.opacity(selected ? 0.18 : 0.08), style: StrokeStyle(lineWidth: 10 * k, lineCap: .round))
+                geometry.path.stroke(color.opacity(selected ? 0.3 : 0.15), style: StrokeStyle(lineWidth: 5 * k, lineCap: .round))
             } else if selected {
                 geometry.path.stroke(Color.accentColor.opacity(0.18), lineWidth: 10 * k)
             }
             geometry.path.stroke(cosmos ? color.opacity(0.75) : color, style: style)
-            if cosmos {
-                FlowingEdgeLight(path: geometry.path, color: .white, width: 2.6 * k, animate: animate)
-            }
             switch connection.head {
             case .arrow:
                 geometry.arrowHead(size: 12 * k).fill(color)
-                    .shadow(color: cosmos ? color : .clear, radius: 5)
             case .dot:
                 geometry.dot(radius: 4 * k).fill(color)
-                    .shadow(color: cosmos ? color : .clear, radius: 5)
             case .none:
                 EmptyView()
             }
