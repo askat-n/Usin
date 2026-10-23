@@ -18,7 +18,7 @@ final class SyncEngine {
     }
 
     private static let snapshotName = "byeknow-snapshot.json"
-    static let pollInterval: Double = 3
+    static let pollInterval: Double = 1
 
     let context: ModelContext
     private let auth = GoogleAuth()
@@ -155,8 +155,8 @@ final class SyncEngine {
 
     // MARK: - Triggers
 
-    /// После правок — синхронизировать через секунду (правки подряд склеиваются).
-    func scheduleSync(after seconds: Double = 1) {
+    /// После правок — синхронизировать через полсекунды (правки подряд склеиваются).
+    func scheduleSync(after seconds: Double = 0.5) {
         guard isConnected, !isApplying else { return }
         editCount += 1
         hasUnsavedChanges = true
@@ -168,7 +168,7 @@ final class SyncEngine {
         }
     }
 
-    /// Пока приложение открыто — проверять правки с других устройств каждые 3 секунды.
+    /// Пока приложение открыто — каждую секунду отправлять свои правки и проверять чужие.
     func startPeriodic() {
         guard isConnected else { return }
         periodicTask?.cancel()
@@ -192,6 +192,11 @@ final class SyncEngine {
     /// Если никто ничего не менял — ничего не скачиваем и облачко не мигает.
     func pollRemote() async {
         guard isConnected, status != .syncing, status != .connecting else { return }
+        // Не ждём автосохранения базы (оно бывает раз в несколько секунд) — сохраняем сами.
+        if context.hasChanges, (try? context.save()) != nil {
+            editCount += 1
+            hasUnsavedChanges = true
+        }
         if hasUnsavedChanges || knownRemoteVersion == nil {
             await syncNow()
             return
