@@ -14,6 +14,7 @@ struct CanvasView: View {
     @State private var holdTask: Task<Void, Never>?
     @State private var createdCount = 0
     @State private var pressedNodeID: UUID?
+    @State private var lastTap: (id: UUID, time: Date)?
 
     /// Сколько секунд держать палец: на пустом месте — новая заметка, на заметке — переименовать.
     static let holdDuration: Double = 1.25
@@ -190,11 +191,17 @@ struct CanvasView: View {
         .position(t.toScreen(node.position))
         .gesture(nodeDrag(node), isEnabled: !editing)
         // Порядок важен: сначала касания, потом удержание — иначе удержание глушит касания.
-        .onTapGesture(count: 2) {
-            if node.isRoot { ws.startRenaming(node) } else { ws.open(node) }
-        }
+        // Двойное касание считаем сами: так одно касание выделяет сразу, без ожидания второго.
         .onTapGesture {
-            if !editing { ws.select(.node(node.id)) }
+            guard !editing else { return }
+            let now = Date()
+            if let last = lastTap, last.id == node.id, now.timeIntervalSince(last.time) < 0.35 {
+                lastTap = nil
+                if node.isRoot { ws.startRenaming(node) } else { ws.open(node) }
+            } else {
+                lastTap = (node.id, now)
+                ws.select(.node(node.id))
+            }
         }
         .onLongPressGesture(minimumDuration: Self.holdDuration, maximumDistance: 6) {
             guard !editing else { return }
