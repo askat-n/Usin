@@ -67,6 +67,21 @@ enum Palette {
     ]
 
     static func swatch(_ index: Int) -> Swatch {
-        swatches.indices.contains(index) ? swatches[index] : swatches[0]
+        let i = swatches.indices.contains(index) ? index : 0
+        // В «Терминале» — яркие цвета терминала (палитра Dracula), чтобы их легко различать.
+        if AppSettings.shared.isTerminal { return terminalSwatches[i] }
+        return swatches[i]
+    }
+
+    /// Порядок совпадает с `swatches`: обычный, красный, оранжевый, жёлтый, зелёный, бирюзовый, синий, фиолетовый, розовый.
+    static let terminalInks: [Color] = [
+        Color(hex: 0x4ADE80), Color(hex: 0xFF5555), Color(hex: 0xFFB86C), Color(hex: 0xF1FA8C), Color(hex: 0x50FA7B),
+        Color(hex: 0x8BE9FD), Color(hex: 0x6CA8FF), Color(hex: 0xBD93F9), Color(hex: 0xFF79C6),
+    ]
+
+    private static let terminalSwatches: [Swatch] = swatches.indices.map { i in
+        Swatch(name: swatches[i].name,
+               fill: i == 0 ? Color(hex: 0x070C07) : terminalInks[i].opacity(0.16),
+               ink: terminalInks[i])
     }
 }

@@ -32,7 +32,11 @@ struct NodeView: View {
     // MARK: Content
 
     private var ink: Color {
-        if terminal { return Term.ink(node.inkIndex) }
+        // У цветной заметки в «Терминале» текст того же цвета, что и рамка.
+        if terminal {
+            if node.isRoot { return Term.ink(node.inkIndex) } // сфера — зелёная, если цвет текста не задан
+            return Term.ink(node.inkIndex == 0 ? node.fillIndex : node.inkIndex)
+        }
         if node.isRoot && node.inkIndex == 0 { return .white }
         return Palette.swatch(node.inkIndex).ink
     }
@@ -71,6 +75,8 @@ struct NodeView: View {
               ? .system(size: terminal ? 20 : 22, weight: .bold, design: terminal ? .monospaced : .rounded)
               : .system(size: terminal ? 14 : 15, weight: .medium, design: terminal ? .monospaced : .default))
         .foregroundStyle(ink)
+        // Свечение люминофора, как на старом мониторе (тень статичная — ничего не стоит).
+        .shadow(color: terminal ? ink.opacity(0.55) : .clear, radius: terminal ? 4 : 0)
         .multilineTextAlignment(.center)
         .padding(node.isRoot || node.shape == .circle ? 24 : 14)
     }
@@ -98,10 +104,16 @@ struct NodeView: View {
                 .fill(Term.bg)
                 .overlay(Circle().stroke(color, lineWidth: 1.5))
                 .overlay(Circle().inset(by: 7).stroke(color.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [3, 4])))
-        } else {
+        } else if node.fillIndex == 0 {
             outline
                 .fill(Term.panel.opacity(0.94))
-                .overlay(outline.stroke(color.opacity(0.85), lineWidth: 1))
+                .overlay(outline.stroke(color.opacity(0.7), lineWidth: 1))
+        } else {
+            // Цветная заметка: подкрашенный фон и рамка потолще — видно сразу.
+            outline
+                .fill(Term.panel.opacity(0.94))
+                .overlay(outline.fill(color.opacity(0.12)))
+                .overlay(outline.stroke(color, lineWidth: 1.6))
         }
     }
 

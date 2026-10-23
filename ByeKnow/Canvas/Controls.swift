@@ -54,15 +54,17 @@ struct ColorGrid: View {
         LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 10), count: 3), spacing: 10) {
             ForEach(Palette.swatches.indices, id: \.self) { i in
                 let swatch = Palette.swatches[i]
+                // В «Терминале» показываем яркий цвет — тот, что увидишь на заметке.
+                let showInk = useInk || AppSettings.shared.isTerminal
                 Button { selection = i } label: {
                     Circle()
-                        .fill(useInk ? swatch.ink : swatch.fill)
+                        .fill(showInk ? swatch.ink : swatch.fill)
                         .overlay(Circle().stroke(Color.primary.opacity(0.15)))
                         .overlay {
                             if selection == i {
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(useInk ? Color.editor : Color.primary)
+                                    .foregroundStyle(showInk ? Color.black : Color.primary)
                             }
                         }
                         .frame(width: 28, height: 28)
@@ -94,7 +96,7 @@ struct ColorButton: View {
                         .foregroundStyle(swatch.ink)
                 } else {
                     Circle()
-                        .fill(useInk ? swatch.ink : swatch.fill)
+                        .fill(useInk || AppSettings.shared.isTerminal ? swatch.ink : swatch.fill)
                         .overlay(Circle().stroke(Color.primary.opacity(0.2)))
                         .frame(width: 20, height: 20)
                 }

@@ -19,7 +19,7 @@ struct NoteEditorView: View {
                 header
 
                 TextField(tr("Название"), text: $node.title, axis: .vertical)
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 34, weight: .bold, design: AppSettings.shared.isTerminal ? .monospaced : .default))
                     .textFieldStyle(.plain)
                     .focused($titleFocused)
                     .onChange(of: node.title) { _, new in

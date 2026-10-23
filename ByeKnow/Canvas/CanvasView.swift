@@ -117,6 +117,14 @@ struct CanvasView: View {
         .overlay(alignment: .trailing) {
             ZoomControls().padding(.trailing, 12)
         }
+        .overlay(alignment: .topTrailing) {
+            if AppSettings.shared.isTerminal {
+                TerminalStatus(transform: CanvasTransform(size: ws.canvasSize, offset: ws.offset, scale: ws.scale),
+                               count: nodes.count - 1)
+                    .padding(.top, 14)
+                    .padding(.trailing, 12)
+            }
+        }
         .overlay(alignment: .bottom) {
             inspector.padding(.bottom, 16).padding(.horizontal, 12)
         }
