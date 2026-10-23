@@ -13,9 +13,10 @@ struct CanvasView: View {
     @State private var press: HoldPress?
     @State private var holdTask: Task<Void, Never>?
     @State private var createdCount = 0
+    @GestureState private var pressedNodeID: UUID?
 
-    /// Сколько секунд держать палец на пустом месте, чтобы появилась заметка.
-    static let holdDuration: Double = 3
+    /// Сколько секунд держать палец: на пустом месте — новая заметка, на заметке — переименовать.
+    static let holdDuration: Double = 1.25
 
     struct HoldPress {
         let id = UUID()
@@ -179,16 +180,32 @@ struct CanvasView: View {
             editing: editing,
             onEndEditing: { ws.editingTitleID = nil }
         )
+        .overlay {
+            if pressedNodeID == node.id {
+                HoldRing(duration: Self.holdDuration).allowsHitTesting(false)
+            }
+        }
         .scaleEffect(t.scale)
         .opacity(isDimmed(node) ? 0.15 : 1)
         .position(t.toScreen(node.position))
         .gesture(nodeDrag(node), isEnabled: !editing)
+        .simultaneousGesture(renameHold(node), isEnabled: !editing)
         .onTapGesture(count: 2) {
             if node.isRoot { ws.startRenaming(node) } else { ws.open(node) }
         }
         .onTapGesture {
             if !editing { ws.select(.node(node.id)) }
         }
+    }
+
+    /// Удержал палец на заметке — можно сразу менять название.
+    private func renameHold(_ node: Node) -> some Gesture {
+        LongPressGesture(minimumDuration: Self.holdDuration, maximumDistance: 6)
+            .updating($pressedNodeID) { _, state, _ in state = node.id }
+            .onEnded { _ in
+                ws.startRenaming(node)
+                createdCount += 1
+            }
     }
 
     private func nodeDrag(_ node: Node) -> some Gesture {
@@ -307,7 +324,7 @@ struct CanvasView: View {
             }
         case .empty:
             if nodes.count <= 1 {
-                Text("Удержи палец на пустом месте 3 секунды — появится заметка")
+                Text("Удержи палец на пустом месте — появится заметка")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
