@@ -3,6 +3,8 @@ import Foundation
 struct DriveFile: Decodable {
     let id: String
     let name: String
+    /// Растёт при каждом изменении файла — по нему видно, менялся ли снимок.
+    var version: String?
 }
 
 /// Скрытая папка приложения на Google Drive (appDataFolder): список, скачать, загрузить.
@@ -13,7 +15,7 @@ struct DriveClient {
         var components = URLComponents(string: "https://www.googleapis.com/drive/v3/files")!
         components.queryItems = [
             URLQueryItem(name: "spaces", value: "appDataFolder"),
-            URLQueryItem(name: "fields", value: "files(id,name)"),
+            URLQueryItem(name: "fields", value: "files(id,name,version)"),
             URLQueryItem(name: "pageSize", value: "1000"),
         ]
         struct Response: Decodable { let files: [DriveFile] }

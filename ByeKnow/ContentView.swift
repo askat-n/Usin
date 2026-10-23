@@ -28,7 +28,7 @@ struct ContentView: View {
         .sheet(isPresented: $ws.showSettings) {
             SettingsView()
         }
-        // Синхронизация: при запуске, при возвращении в приложение, после правок и каждые 20 секунд.
+        // Синхронизация: при запуске, при возвращении в приложение, после правок и проверка Drive каждые 3 секунды.
         .task {
             await sync.syncNow()
             sync.startPeriodic()

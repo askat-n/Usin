@@ -18,6 +18,7 @@ final class SyncEngine {
     }
 
     private static let snapshotName = "byeknow-snapshot.json"
+    static let pollInterval: Double = 3
 
     let context: ModelContext
     private let auth = GoogleAuth()
@@ -31,6 +32,8 @@ final class SyncEngine {
     /// Есть правки на устройстве, которые ещё не дошли до Google Drive.
     var hasUnsavedChanges = false
     private var editCount = 0
+    /// Версия снимка на Drive, которая уже есть на устройстве.
+    private var knownRemoteVersion: String?
 
     private var isApplying = false
     private var connectAttempt = 0
@@ -138,6 +141,7 @@ final class SyncEngine {
         lastSync = nil
         UserDefaults.standard.removeObject(forKey: "sync.lastSync")
         try? FileManager.default.removeItem(at: Self.baseURL)
+        knownRemoteVersion = nil
         stopPeriodic()
     }
 
@@ -151,8 +155,8 @@ final class SyncEngine {
 
     // MARK: - Triggers
 
-    /// После правок — синхронизировать через пару секунд (правки подряд склеиваются).
-    func scheduleSync(after seconds: Double = 2) {
+    /// После правок — синхронизировать через секунду (правки подряд склеиваются).
+    func scheduleSync(after seconds: Double = 1) {
         guard isConnected, !isApplying else { return }
         editCount += 1
         hasUnsavedChanges = true
@@ -164,15 +168,15 @@ final class SyncEngine {
         }
     }
 
-    /// Пока приложение открыто — забирать правки с других устройств каждые 20 секунд.
+    /// Пока приложение открыто — проверять правки с других устройств каждые 3 секунды.
     func startPeriodic() {
         guard isConnected else { return }
         periodicTask?.cancel()
         periodicTask = Task {
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(20))
+                try? await Task.sleep(for: .seconds(Self.pollInterval))
                 guard !Task.isCancelled else { return }
-                await syncNow()
+                await pollRemote()
             }
         }
     }
@@ -183,6 +187,29 @@ final class SyncEngine {
     }
 
     // MARK: - Sync
+
+    /// Лёгкая проверка: спрашиваем у Drive только версию снимка.
+    /// Если никто ничего не менял — ничего не скачиваем и облачко не мигает.
+    func pollRemote() async {
+        guard isConnected, status != .syncing, status != .connecting else { return }
+        if hasUnsavedChanges || knownRemoteVersion == nil {
+            await syncNow()
+            return
+        }
+        do {
+            let drive = DriveClient(token: try await auth.validAccessToken())
+            let version = try await drive.list().first { $0.name == Self.snapshotName }?.version
+            if version != knownRemoteVersion {
+                await syncNow()
+            } else {
+                if case .failed = status { status = .idle }
+                lastSync = Date()
+                UserDefaults.standard.set(lastSync, forKey: "sync.lastSync")
+            }
+        } catch {
+            status = .failed(Self.message(for: error))
+        }
+    }
 
     func syncNow(replaceLocal: Bool = false) async {
         guard isConnected else { return }
@@ -251,6 +278,9 @@ final class SyncEngine {
             } else {
                 try await drive.create(name: Self.snapshotName, data: data)
             }
+            knownRemoteVersion = nil // новую версию узнаем при следующей проверке
+        } else {
+            knownRemoteVersion = byName[Self.snapshotName]?.version
         }
         saveBase(merged)
     }
