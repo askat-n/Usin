@@ -80,6 +80,7 @@ struct TabBar: View {
                     }
                 }
             }
+            SyncIndicator()
             ToolButton(icon: "plus", help: tr("Новая заметка во вкладке (⌘T)")) { ws.newNoteTab() }
             ToolButton(icon: "magnifyingglass", help: tr("Все заметки (⌘K)")) { ws.showAllNotes = true }
             ToolButton(icon: "gearshape", help: tr("Настройки")) { ws.showSettings = true }

@@ -205,6 +205,10 @@ private let englishStrings: [String: String] = [
     "Нет": "No",
     "Войди в Google ещё раз": "Sign in to Google again",
     "Нет интернета или Google не отвечает": "No internet or Google is not responding",
+    "Google Drive не подключён": "Google Drive is not connected",
+    "Все изменения сохранены в Google Drive": "All changes saved to Google Drive",
+    "Сохранение…": "Saving…",
+    "Не удалось сохранить в Google Drive": "Couldn't save to Google Drive",
     "Войди в Google в открывшемся окне браузера — потом приложение подключится само.":
         "Sign in to Google in the browser window that opened — the app will connect by itself afterwards.",
 ]

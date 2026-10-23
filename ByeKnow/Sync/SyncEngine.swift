@@ -28,6 +28,9 @@ final class SyncEngine {
     var isConnected: Bool
     /// На устройстве и на Drive есть заметки — ждём ответа «стереть и подключить?».
     var needsReplaceConfirmation = false
+    /// Есть правки на устройстве, которые ещё не дошли до Google Drive.
+    var hasUnsavedChanges = false
+    private var editCount = 0
 
     private var isApplying = false
     private var connectAttempt = 0
@@ -151,6 +154,8 @@ final class SyncEngine {
     /// После правок — синхронизировать через пару секунд (правки подряд склеиваются).
     func scheduleSync(after seconds: Double = 2) {
         guard isConnected, !isApplying else { return }
+        editCount += 1
+        hasUnsavedChanges = true
         debounceTask?.cancel()
         debounceTask = Task {
             try? await Task.sleep(for: .seconds(seconds))
@@ -186,9 +191,12 @@ final class SyncEngine {
             return
         }
         status = .syncing
+        let editsAtStart = editCount
         do {
             try await performSync(replaceLocal: replaceLocal)
             status = .idle
+            // Правки, сделанные во время синхронизации, ещё не на Drive.
+            if editCount == editsAtStart { hasUnsavedChanges = false }
             lastSync = Date()
             UserDefaults.standard.set(lastSync, forKey: "sync.lastSync")
         } catch {
