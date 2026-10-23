@@ -1,10 +1,14 @@
 import SwiftUI
 import AuthenticationServices
+import SwiftData
 
 struct SettingsView: View {
     @Environment(SyncEngine.self) private var sync
     @Environment(\.dismiss) private var dismiss
     @Environment(\.webAuthenticationSession) private var webAuth
+    @Query(filter: #Predicate<Node> { $0.deletedAt != nil }) private var trashed: [Node]
+
+    private var trashCount: Int { trashed.count }
 
     var body: some View {
         @Bindable var settings = AppSettings.shared
@@ -46,7 +50,24 @@ struct SettingsView: View {
                     Toggle(tr("Сетка из точек"), isOn: $settings.showGrid)
                 }
 
+                Section {
+                    NavigationLink {
+                        TrashView()
+                    } label: {
+                        LabeledContent {
+                            if trashCount > 0 { Text("\(trashCount)") }
+                        } label: {
+                            Label(tr("Корзина"), systemImage: "trash")
+                        }
+                    }
+                }
+
                 Section(tr("О приложении")) {
+                    NavigationLink {
+                        HelpView()
+                    } label: {
+                        Label(tr("Как пользоваться"), systemImage: "questionmark.circle")
+                    }
                     LabeledContent("ByeKnow", value: tr("Версия") + " " + appVersion)
                 }
             }

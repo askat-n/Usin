@@ -333,7 +333,12 @@ final class SyncEngine {
         if replaceLocal || remoteChanged || firstBuild || !images.isEmpty
             || target != SyncSnapshot.current(in: context) {
             isApplying = true
-            defer { isApplying = false }
+            // Правки с других устройств не должны попадать в ⌘Z этого устройства.
+            context.undoManager?.disableUndoRegistration()
+            defer {
+                context.undoManager?.enableUndoRegistration()
+                isApplying = false
+            }
             var stillMissing = try target.apply(to: context, images: images)
             stillMissing.formUnion(missingImages.subtracting(images.keys))
             try repairImages(images)

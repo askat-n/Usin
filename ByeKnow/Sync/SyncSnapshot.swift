@@ -26,6 +26,8 @@ struct NodeRecord: SyncRecord {
     var isRoot: Bool
     var createdAt: Date
     var themeID: UUID?
+    /// В корзине с этого момента.
+    var deletedAt: Date?
 }
 
 struct BlockRecord: SyncRecord {
@@ -62,7 +64,7 @@ struct SyncSnapshot: Codable, Equatable {
 
     /// Есть ли что-то, кроме пустой сферы.
     var hasUserData: Bool {
-        !themes.isEmpty || nodes.contains { !$0.isRoot }
+        !themes.isEmpty || nodes.contains { !$0.isRoot && $0.deletedAt == nil }
     }
 }
 
@@ -86,7 +88,7 @@ extension SyncSnapshot {
         snapshot.nodes = nodes.map {
             NodeRecord(id: $0.id, title: $0.title, x: $0.x, y: $0.y, shapeRaw: $0.shapeRaw,
                        fillIndex: $0.fillIndex, inkIndex: $0.inkIndex, isRoot: $0.isRoot,
-                       createdAt: $0.createdAt, themeID: $0.theme?.id)
+                       createdAt: $0.createdAt, themeID: $0.theme?.id, deletedAt: $0.deletedAt)
         }
         snapshot.blocks = blocks.map {
             BlockRecord(id: $0.id, nodeID: $0.node?.id, order: $0.order, kindRaw: $0.kindRaw,
@@ -175,6 +177,7 @@ extension SyncSnapshot {
             set(&node.inkIndex, rec.inkIndex)
             set(&node.isRoot, rec.isRoot)
             set(&node.createdAt, rec.createdAt)
+            set(&node.deletedAt, rec.deletedAt)
             let theme = rec.themeID.flatMap { themeByID[$0] }
             if node.theme?.id != theme?.id { node.theme = theme }
         }

@@ -133,6 +133,8 @@ final class Node {
     var inkIndex: Int = 0
     var isRoot: Bool = false
     var createdAt: Date = Date()
+    /// Когда заметку положили в корзину (nil — не в корзине).
+    var deletedAt: Date?
     var theme: Theme?
     @Relationship(deleteRule: .cascade, inverse: \NoteBlock.node)
     var blocks: [NoteBlock] = []
@@ -157,6 +159,15 @@ final class Node {
     var hasTitle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var displayTitle: String { hasTitle ? title : tr("Новая заметка") }
+
+    /// Сколько дней заметка хранится в корзине.
+    static let trashDays = 30
+
+    var daysLeftInTrash: Int {
+        guard let deletedAt else { return Self.trashDays }
+        let passed = Calendar.current.dateComponents([.day], from: deletedAt, to: Date()).day ?? 0
+        return max(Self.trashDays - passed, 0)
+    }
 
     var sortedBlocks: [NoteBlock] { blocks.sorted { $0.order < $1.order } }
 

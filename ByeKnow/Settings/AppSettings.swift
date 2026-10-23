@@ -211,4 +211,27 @@ private let englishStrings: [String: String] = [
     "Не удалось сохранить в Google Drive": "Couldn't save to Google Drive",
     "Войди в Google в открывшемся окне браузера — потом приложение подключится само.":
         "Sign in to Google in the browser window that opened — the app will connect by itself afterwards.",
+
+    // Корзина, помощь, меню
+    "Корзина": "Trash",
+    "Корзина пуста": "Trash is empty",
+    "Удалённые заметки хранятся здесь 30 дней.": "Deleted notes are kept here for 30 days.",
+    "Заметки удаляются навсегда через 30 дней после попадания в корзину.": "Notes are deleted forever 30 days after they go to the trash.",
+    "Очистить": "Empty",
+    "Очистить корзину?": "Empty the trash?",
+    "Удалить все навсегда": "Delete all forever",
+    "Заметки из корзины удалятся на всех устройствах. Это нельзя отменить.": "Notes in the trash will be deleted on all devices. This can't be undone.",
+    "Удалить навсегда?": "Delete forever?",
+    "Удалить навсегда": "Delete forever",
+    "Это нельзя отменить.": "This can't be undone.",
+    "Восстановить": "Restore",
+    "Осталось дней": "Days left",
+    "Заметка в корзине": "Note moved to trash",
+    "Отменить": "Undo",
+    "Как пользоваться": "How to use",
+    "Открыть выбранную заметку": "Open selected note",
+    "Дублировать": "Duplicate",
+    "Вернуть закрытую вкладку": "Reopen closed tab",
+    "Переместить в корзину": "Move to trash",
+    "Найти…": "Find…",
 ]

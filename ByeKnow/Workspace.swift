@@ -31,10 +31,13 @@ final class Workspace {
 
     var showAllNotes = false
     var showSettings = false
+    /// Недавно закрытые вкладки — для ⇧⌘T.
+    private var closedTabs: [UUID] = []
 
     init(context: ModelContext) {
         self.context = context
         ensureRoot()
+        purgeExpiredTrash()
         restoreTabs()
         centerOnRoot()
     }
@@ -103,16 +106,94 @@ final class Workspace {
         )
     }
 
+    /// Удалить заметку = положить в корзину. Стрелки остаются — вернутся при восстановлении.
     func delete(_ node: Node) {
+        guard !node.isRoot else { return }
+        node.deletedAt = Date()
+        close(tab: node.id)
+        if editingTitleID == node.id { editingTitleID = nil }
+        selection = .empty
+        showTrashToast(for: node.id)
+    }
+
+    func restore(_ node: Node) {
+        node.deletedAt = nil
+        if trashToastID == node.id { trashToastID = nil }
+    }
+
+    /// Удалить навсегда — вместе со стрелками и строками.
+    func deleteForever(_ node: Node) {
         guard !node.isRoot else { return }
         let id = node.id
         for c in allConnections where c.fromID == id || c.toID == id {
             context.delete(c)
         }
         close(tab: id)
-        if editingTitleID == id { editingTitleID = nil }
-        selection = .empty
         context.delete(node)
+    }
+
+    func emptyTrash() {
+        let d = FetchDescriptor<Node>(predicate: #Predicate { $0.deletedAt != nil })
+        for node in (try? context.fetch(d)) ?? [] { deleteForever(node) }
+    }
+
+    /// Заметки старше 30 дней в корзине удаляются сами.
+    private func purgeExpiredTrash() {
+        let limit = Date().addingTimeInterval(-Double(Node.trashDays) * 86_400)
+        let d = FetchDescriptor<Node>(predicate: #Predicate { $0.deletedAt != nil })
+        for node in (try? context.fetch(d)) ?? [] where (node.deletedAt ?? Date()) < limit {
+            deleteForever(node)
+        }
+        if context.hasChanges { try? context.save() }
+    }
+
+    // MARK: - Trash toast («Заметка в корзине · Отменить»)
+
+    var trashToastID: UUID?
+    private var toastTask: Task<Void, Never>?
+
+    private func showTrashToast(for id: UUID) {
+        trashToastID = id
+        toastTask?.cancel()
+        toastTask = Task {
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            withAnimation(.snappy) { trashToastID = nil }
+        }
+    }
+
+    func undoTrashFromToast() {
+        guard let id = trashToastID, let node = node(id) else { return }
+        withAnimation(.snappy) { restore(node) }
+        select(.node(id))
+    }
+
+    /// Копия заметки рядом с оригиналом — со всеми строками и картинками.
+    func duplicateSelection() {
+        guard activeTab == nil, case .node(let id) = selection, let source = node(id), !source.isRoot else { return }
+        let copy = Node(position: CGPoint(x: source.x + 40, y: source.y + 40))
+        copy.title = source.title
+        copy.shapeRaw = source.shapeRaw
+        copy.fillIndex = source.fillIndex
+        copy.inkIndex = source.inkIndex
+        context.insert(copy)
+        copy.theme = source.theme
+        for block in source.sortedBlocks {
+            let b = copy.addBlock(block.kind, context: context)
+            b.text = block.text
+            b.isChecked = block.isChecked
+            if block.imageHash != nil || block.kind == .image {
+                b.imageData = block.imageData
+                b.imageHash = block.imageHash
+            }
+        }
+        select(.node(copy.id))
+    }
+
+    /// Открыть выбранную на холсте заметку во вкладке.
+    func openSelection() {
+        guard activeTab == nil, case .node(let id) = selection, let n = node(id) else { return }
+        if n.isRoot { startRenaming(n) } else { open(n) }
     }
 
     func deleteSelection() {
@@ -169,10 +250,21 @@ final class Workspace {
     func close(tab id: UUID) {
         guard let i = openTabs.firstIndex(of: id) else { return }
         openTabs.remove(at: i)
+        closedTabs.append(id)
         if activeTab == id {
             activeTab = openTabs.indices.contains(i) ? openTabs[i] : openTabs.last
         }
         saveTabs()
+    }
+
+    /// Вернуть последнюю закрытую вкладку (как ⇧⌘T в браузере).
+    func reopenClosedTab() {
+        while let id = closedTabs.popLast() {
+            if let n = node(id), n.deletedAt == nil {
+                open(n)
+                return
+            }
+        }
     }
 
     /// 0 = холст, 1… = вкладки.
@@ -201,7 +293,7 @@ final class Workspace {
 
     private func restoreTabs() {
         let ids = (UserDefaults.standard.stringArray(forKey: "openTabs") ?? []).compactMap(UUID.init)
-        openTabs = ids.filter { node($0) != nil }
+        openTabs = ids.filter { node($0).map { $0.deletedAt == nil } ?? false }
     }
 
     // MARK: - Camera

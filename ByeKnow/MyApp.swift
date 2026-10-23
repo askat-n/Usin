@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+#if os(macOS)
+import AppKit
+#endif
 
 @main struct MyApp: App {
     let container: ModelContainer
@@ -44,24 +47,47 @@ struct WorkspaceCommands: Commands {
             Button(tr("Настройки") + "…") { ws.showSettings = true }
                 .keyboardShortcut(",")
         }
+
+        // Файл
         CommandGroup(replacing: .newItem) {
             Button(tr("Новая заметка")) { ws.createNodeAtViewCenter() }
                 .keyboardShortcut("n")
             Button(tr("Новая заметка во вкладке")) { ws.newNoteTab() }
                 .keyboardShortcut("t")
+            Button(tr("Открыть выбранную заметку")) { ws.openSelection() }
+                .keyboardShortcut(.return, modifiers: .command)
+            Button(tr("Дублировать")) { ws.duplicateSelection() }
+                .keyboardShortcut("d")
         }
+        CommandGroup(replacing: .saveItem) {
+            // ⌘W — как в браузере: закрывает вкладку, а на холсте — окно.
+            Button(tr("Закрыть вкладку")) { closeTabOrWindow() }
+                .keyboardShortcut("w")
+            Button(tr("Вернуть закрытую вкладку")) { ws.reopenClosedTab() }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+        }
+
+        // Правка (⌘Z / ⇧⌘Z / ⌘X / ⌘C / ⌘V / ⌘A — системные)
+        CommandGroup(after: .pasteboard) {
+            Divider()
+            Button(tr("Переместить в корзину")) { ws.deleteSelection() }
+                .keyboardShortcut(.delete, modifiers: .command)
+            Button(tr("Найти…")) { ws.showAllNotes = true }
+                .keyboardShortcut("f")
+        }
+
         CommandMenu(tr("Холст")) {
             Button(tr("Все заметки…")) { ws.showAllNotes = true }
                 .keyboardShortcut("k")
+            Divider()
             Button(tr("К сфере ByeKnow")) { ws.activeTab = nil; ws.goHome() }
                 .keyboardShortcut("0")
             Button(tr("Приблизить")) { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
                 .keyboardShortcut("=")
             Button(tr("Отдалить")) { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
                 .keyboardShortcut("-")
-            Button(tr("Удалить выбранное")) { ws.deleteSelection() }
-                .keyboardShortcut(.delete, modifiers: .command)
         }
+
         CommandMenu(tr("Вкладки")) {
             Button(tr("Холст")) { ws.selectTab(at: 0) }
                 .keyboardShortcut("1")
@@ -74,8 +100,16 @@ struct WorkspaceCommands: Commands {
                 .keyboardShortcut("]", modifiers: [.command, .shift])
             Button(tr("Предыдущая вкладка")) { ws.cycleTab(-1) }
                 .keyboardShortcut("[", modifiers: [.command, .shift])
-            Button(tr("Закрыть вкладку")) { if let id = ws.activeTab { ws.close(tab: id) } }
-                .keyboardShortcut("w", modifiers: [.command, .option])
+        }
+    }
+
+    private func closeTabOrWindow() {
+        if let id = ws.activeTab {
+            ws.close(tab: id)
+        } else {
+            #if os(macOS)
+            NSApp.keyWindow?.performClose(nil)
+            #endif
         }
     }
 }

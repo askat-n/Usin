@@ -3,12 +3,14 @@ import SwiftData
 
 struct CanvasView: View {
     @Environment(Workspace.self) private var ws
-    @Query(sort: \Node.createdAt) private var nodes: [Node]
+    /// Заметки в корзине на холсте не показываются (и их стрелки тоже).
+    @Query(filter: #Predicate<Node> { $0.deletedAt == nil }, sort: \Node.createdAt) private var nodes: [Node]
     @Query(sort: \Connection.createdAt) private var connections: [Connection]
 
     @State private var panOrigin: CGSize?
     @State private var zoomOrigin: (scale: CGFloat, offset: CGSize)?
     @State private var dragOrigin: (id: UUID, position: CGPoint)?
+    @State private var bendOrigin: (x: Double, y: Double, style: String)?
     @State private var linkDraft: (from: UUID, point: CGPoint)?
     @State private var press: HoldPress?
     @State private var holdTask: Task<Void, Never>?
@@ -206,12 +208,31 @@ struct CanvasView: View {
                 if dragOrigin?.id != node.id {
                     dragOrigin = (node.id, node.position)
                     ws.select(.node(node.id))
+                    // Пока тянем, каждый кадр в ⌘Z не записываем — только итог.
+                    ws.context.undoManager?.disableUndoRegistration()
                 }
                 guard let origin = dragOrigin else { return }
                 node.x = origin.position.x + v.translation.width / ws.scale
                 node.y = origin.position.y + v.translation.height / ws.scale
             }
-            .onEnded { _ in dragOrigin = nil }
+            .onEnded { _ in
+                guard let origin = dragOrigin else { return }
+                dragOrigin = nil
+                commitAsOneUndoStep {
+                    let final = node.position
+                    node.x = origin.position.x
+                    node.y = origin.position.y
+                    return { node.x = final.x; node.y = final.y }
+                }
+            }
+    }
+
+    /// Вернуть значения «как до перетаскивания» без записи, включить запись и поставить итог —
+    /// так перетаскивание отменяется одним ⌘Z.
+    private func commitAsOneUndoStep(_ resetAndGetFinal: () -> () -> Void) {
+        let applyFinal = resetAndGetFinal()
+        ws.context.undoManager?.enableUndoRegistration()
+        applyFinal()
     }
 
     // MARK: - Arrows
@@ -268,10 +289,23 @@ struct CanvasView: View {
             .gesture(
                 DragGesture(minimumDistance: 1, coordinateSpace: .named("canvas"))
                     .onChanged { v in
+                        if bendOrigin == nil {
+                            bendOrigin = (c.bendX, c.bendY, c.styleRaw)
+                            ws.context.undoManager?.disableUndoRegistration()
+                        }
                         let mid = EdgeGeometry.midpoint(t.toScreen(a.position), t.toScreen(b.position))
                         c.bendX = (v.location.x - mid.x) / t.scale
                         c.bendY = (v.location.y - mid.y) / t.scale
                         c.style = .curved
+                    }
+                    .onEnded { _ in
+                        guard let origin = bendOrigin else { return }
+                        bendOrigin = nil
+                        commitAsOneUndoStep {
+                            let final = (c.bendX, c.bendY, c.styleRaw)
+                            (c.bendX, c.bendY, c.styleRaw) = origin
+                            return { (c.bendX, c.bendY, c.styleRaw) = final }
+                        }
                     }
             )
             .onTapGesture(count: 2) {
@@ -305,6 +339,15 @@ struct CanvasView: View {
 
     @ViewBuilder
     private var inspector: some View {
+        if ws.trashToastID != nil {
+            TrashToast().transition(.move(edge: .bottom).combined(with: .opacity))
+        } else {
+            selectionPanel
+        }
+    }
+
+    @ViewBuilder
+    private var selectionPanel: some View {
         switch ws.selection {
         case .node(let id):
             if let node = nodes.first(where: { $0.id == id }) {

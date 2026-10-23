@@ -5,7 +5,8 @@ struct ContentView: View {
     @Environment(Workspace.self) private var ws
     @Environment(SyncEngine.self) private var sync
     @Environment(\.scenePhase) private var scenePhase
-    @Query private var nodes: [Node]
+    @Environment(\.undoManager) private var undoManager
+    @Query(filter: #Predicate<Node> { $0.deletedAt == nil }) private var nodes: [Node]
 
     var body: some View {
         @Bindable var ws = ws
@@ -44,6 +45,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
             sync.scheduleSync()
         }
+        // ⌘Z / ⇧⌘Z: правки заметок и холста отменяются через стандартное «Правка → Отменить».
+        .onAppear { ws.context.undoManager = undoManager }
+        .onChange(of: undoManager) { _, manager in ws.context.undoManager = manager }
         // Возврат из браузера после входа в Google — в это же окно, не в новое.
         .onOpenURL { url in sync.handleRedirect(url) }
         .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
@@ -54,7 +58,7 @@ struct ContentView: View {
 
 struct TabBar: View {
     @Environment(Workspace.self) private var ws
-    @Query private var nodes: [Node]
+    @Query(filter: #Predicate<Node> { $0.deletedAt == nil }) private var nodes: [Node]
 
     var body: some View {
         let byID = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -140,7 +144,8 @@ struct TabChip: View {
 struct AllNotesView: View {
     @Environment(Workspace.self) private var ws
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Node.createdAt, order: .reverse) private var nodes: [Node]
+    @Query(filter: #Predicate<Node> { $0.deletedAt == nil }, sort: \Node.createdAt, order: .reverse)
+    private var nodes: [Node]
     @State private var query = ""
 
     private var results: [Node] {
