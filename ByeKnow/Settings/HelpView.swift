@@ -21,6 +21,8 @@ struct HelpView: View {
                                     "Drag an empty spot to pan. Pinch or ⌘ + scroll to zoom"))
                 item("scope", t("Кнопка ◎ справа — вернуться к сфере ByeKnow",
                                 "The ◎ button on the right takes you back to the ByeKnow sphere"))
+                item("sparkles", t("Настройки → Оформление: «Космос» (тёмный живой холст) или «Классический». Анимацию можно выключить",
+                                   "Settings → Appearance: “Cosmos” (dark living canvas) or “Classic”. Animation can be turned off"))
             }
 
             Section(t("Заметки и стрелки", "Notes and arrows")) {

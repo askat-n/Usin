@@ -29,11 +29,23 @@ struct SettingsView: View {
                 }
 
                 Section(tr("Оформление")) {
-                    Picker(tr("Тема оформления"), selection: $settings.appearance) {
-                        ForEach(AppAppearance.allCases) { Text($0.title).tag($0) }
+                    Picker(tr("Стиль холста"), selection: $settings.canvasStyle) {
+                        ForEach(CanvasStyle.allCases) { Text($0.title).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    if settings.isCosmos {
+                        Toggle(tr("Анимация"), isOn: $settings.cosmosMotion)
+                        Text(tr("В стиле «Космос» оформление всегда тёмное.") + " " + tr("Без анимации холст не тратит батарею."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker(tr("Тема оформления"), selection: $settings.appearance) {
+                            ForEach(AppAppearance.allCases) { Text($0.title).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
                 }
 
                 Section(tr("Холст")) {

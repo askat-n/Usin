@@ -5,26 +5,43 @@ struct ConnectionView: View {
     let connection: Connection
     let selected: Bool
     let scale: CGFloat
+    var cosmos = false
+    var animate = true
 
     var body: some View {
-        let color = connection.colorIndex == 0 ? Color.secondary : Palette.swatch(connection.colorIndex).ink
         let k = max(0.6, min(scale, 1.5))
+        let color: Color = {
+            if connection.colorIndex != 0 { return Palette.swatch(connection.colorIndex).ink }
+            return cosmos ? Cosmos.defaultGlow : .secondary
+        }()
         let style = StrokeStyle(
-            lineWidth: (selected ? 2.6 : 1.8) * k,
+            lineWidth: (selected ? 2.6 : (cosmos ? 1.4 : 1.8)) * k,
             lineCap: .round,
             lineJoin: .round,
             dash: connection.dashed ? [6 * k, 5 * k] : []
         )
 
         ZStack {
-            if selected {
+            if cosmos {
+                // Мягкое свечение вокруг линии
+                geometry.path.stroke(color.opacity(selected ? 0.55 : 0.28), lineWidth: 7 * k)
+                    .blur(radius: 5)
+            } else if selected {
                 geometry.path.stroke(Color.accentColor.opacity(0.18), lineWidth: 10 * k)
             }
-            geometry.path.stroke(color, style: style)
+            geometry.path.stroke(cosmos ? color.opacity(0.75) : color, style: style)
+            if cosmos {
+                FlowingEdgeLight(path: geometry.path, color: .white, width: 2.6 * k, animate: animate)
+            }
             switch connection.head {
-            case .arrow: geometry.arrowHead(size: 12 * k).fill(color)
-            case .dot: geometry.dot(radius: 4 * k).fill(color)
-            case .none: EmptyView()
+            case .arrow:
+                geometry.arrowHead(size: 12 * k).fill(color)
+                    .shadow(color: cosmos ? color : .clear, radius: 5)
+            case .dot:
+                geometry.dot(radius: 4 * k).fill(color)
+                    .shadow(color: cosmos ? color : .clear, radius: 5)
+            case .none:
+                EmptyView()
             }
         }
         .contentShape(geometry.path.strokedPath(StrokeStyle(lineWidth: 22, lineCap: .round)))

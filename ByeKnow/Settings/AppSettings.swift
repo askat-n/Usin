@@ -29,6 +29,13 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     }
 }
 
+enum CanvasStyle: String, CaseIterable, Identifiable {
+    case cosmos, classic
+
+    var id: String { rawValue }
+    var title: String { self == .cosmos ? tr("Космос") : tr("Классический") }
+}
+
 /// Настройки, которые человек меняет под себя. Хранятся на устройстве.
 @Observable
 final class AppSettings {
@@ -59,6 +66,21 @@ final class AppSettings {
         didSet { defaults.set(showGrid, forKey: "settings.showGrid") }
     }
 
+    /// «Космос» — тёмный живой холст с анимацией, «Классический» — светлый спокойный.
+    var canvasStyle: CanvasStyle {
+        didSet { defaults.set(canvasStyle.rawValue, forKey: "settings.canvasStyle") }
+    }
+
+    var isCosmos: Bool { canvasStyle == .cosmos }
+
+    /// Движение в «Космосе»: плавающие заметки, звёзды, огоньки на стрелках.
+    var cosmosMotion: Bool {
+        didSet { defaults.set(cosmosMotion, forKey: "settings.cosmosMotion") }
+    }
+
+    /// В «Космосе» оформление всегда тёмное.
+    var effectiveColorScheme: ColorScheme? { isCosmos ? .dark : appearance.colorScheme }
+
     private init() {
         let systemIsRussian = Locale.preferredLanguages.first?.hasPrefix("ru") ?? true
         language = AppLanguage(rawValue: defaults.string(forKey: "settings.language") ?? "")
@@ -68,6 +90,8 @@ final class AppSettings {
         holdDuration = hold > 0 ? hold : 1.25
         defaultShape = NodeShape(rawValue: defaults.string(forKey: "settings.defaultShape") ?? "") ?? .card
         showGrid = defaults.object(forKey: "settings.showGrid") as? Bool ?? true
+        canvasStyle = CanvasStyle(rawValue: defaults.string(forKey: "settings.canvasStyle") ?? "") ?? .cosmos
+        cosmosMotion = defaults.object(forKey: "settings.cosmosMotion") as? Bool ?? true
     }
 }
 
@@ -234,4 +258,10 @@ private let englishStrings: [String: String] = [
     "Вернуть закрытую вкладку": "Reopen closed tab",
     "Переместить в корзину": "Move to trash",
     "Найти…": "Find…",
+    "Космос": "Cosmos",
+    "Классический": "Classic",
+    "Стиль холста": "Canvas style",
+    "В стиле «Космос» оформление всегда тёмное.": "The Cosmos style is always dark.",
+    "Анимация": "Animation",
+    "Без анимации холст не тратит батарею.": "Without animation the canvas doesn't use battery.",
 ]

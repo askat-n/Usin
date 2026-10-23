@@ -27,7 +27,7 @@ import AppKit
                 .environment(workspace)
                 .environment(sync)
                 .environment(AppSettings.shared)
-                .preferredColorScheme(AppSettings.shared.appearance.colorScheme)
+                .preferredColorScheme(AppSettings.shared.effectiveColorScheme)
         }
         .modelContainer(container)
         #if os(macOS)

@@ -23,6 +23,8 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        // Под холстом (у полоски «домой» на iPhone) — тот же фон, без чёрной или белой полосы.
+        .background((AppSettings.shared.isCosmos ? Cosmos.deep : Color.canvas).ignoresSafeArea())
         .sheet(isPresented: $ws.showAllNotes) {
             AllNotesView()
         }

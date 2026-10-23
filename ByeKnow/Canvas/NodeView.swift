@@ -8,6 +8,17 @@ struct NodeView: View {
     var onEndEditing: () -> Void
 
     @FocusState private var focused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+
+    private var cosmos: Bool { AppSettings.shared.isCosmos }
+    /// Анимация только когда приложение на переднем плане — в фоне батарея не тратится.
+    private var animate: Bool { cosmos && AppSettings.shared.cosmosMotion && !reduceMotion && scenePhase == .active }
+
+    /// Цвет свечения заметки в «Космосе».
+    private var glow: Color {
+        node.fillIndex == 0 ? Cosmos.defaultGlow : Palette.swatch(node.fillIndex).ink
+    }
 
     var body: some View {
         let size = node.size
@@ -15,6 +26,7 @@ struct NodeView: View {
             .frame(width: size.width, height: size.height)
             .background { background(size) }
             .overlay { ring }
+            .modifier(Floating(seed: node.id.seed, enabled: animate && !node.isRoot && !editing))
     }
 
     // MARK: Content
@@ -66,6 +78,33 @@ struct NodeView: View {
 
     @ViewBuilder
     private func background(_ size: CGSize) -> some View {
+        if cosmos {
+            cosmicBackground(size)
+        } else {
+            classicBackground(size)
+        }
+    }
+
+    @ViewBuilder
+    private func cosmicBackground(_ size: CGSize) -> some View {
+        if node.isRoot {
+            CosmicOrb(base: node.fillIndex == 0 ? Cosmos.defaultGlow : Palette.swatch(node.fillIndex).ink,
+                      size: size.width, animate: animate)
+        } else {
+            let shape = node.shape.outline
+            shape
+                .fill(Cosmos.glass.opacity(0.88))
+                .overlay(shape.fill(LinearGradient(colors: [glow.opacity(0.26), glow.opacity(0.04)],
+                                                   startPoint: .top, endPoint: .bottom)))
+                .overlay(shape.stroke(LinearGradient(colors: [glow.opacity(0.95), glow.opacity(0.2)],
+                                                     startPoint: .topLeading, endPoint: .bottomTrailing),
+                                      lineWidth: 1.2))
+                .shadow(color: glow.opacity(selected ? 0.75 : 0.35), radius: selected ? 20 : 12)
+        }
+    }
+
+    @ViewBuilder
+    private func classicBackground(_ size: CGSize) -> some View {
         if node.isRoot {
             let base = node.fillIndex == 0 ? Color.gray : Palette.swatch(node.fillIndex).ink
             Circle()
@@ -96,8 +135,9 @@ struct NodeView: View {
         let outline = node.isRoot ? AnyShape(Circle()) : node.shape.outline
         if selected {
             outline
-                .stroke(Color.accentColor, lineWidth: 2)
+                .stroke(cosmos ? Color.white.opacity(0.9) : Color.accentColor, lineWidth: cosmos ? 1.5 : 2)
                 .padding(-5)
+                .shadow(color: cosmos ? glow : .clear, radius: 8)
         } else if isOpen {
             outline
                 .stroke(Color.accentColor.opacity(0.55), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))

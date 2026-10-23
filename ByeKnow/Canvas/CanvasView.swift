@@ -3,6 +3,11 @@ import SwiftData
 
 struct CanvasView: View {
     @Environment(Workspace.self) private var ws
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Анимация только когда приложение на переднем плане — в фоне батарея не тратится.
+    private var animate: Bool { AppSettings.shared.cosmosMotion && !reduceMotion && scenePhase == .active }
     /// Заметки в корзине на холсте не показываются (и их стрелки тоже).
     @Query(filter: #Predicate<Node> { $0.deletedAt == nil }, sort: \Node.createdAt) private var nodes: [Node]
     @Query(sort: \Connection.createdAt) private var connections: [Connection]
@@ -32,6 +37,8 @@ struct CanvasView: View {
 
             ZStack {
                 background(t)
+                    // Фон уходит под полоску «домой» на iPhone — без тёмной полосы снизу.
+                    .ignoresSafeArea(.container, edges: .bottom)
 
                 ForEach(connections) { c in
                     if let a = byID[c.fromID], let b = byID[c.toID] {
@@ -39,7 +46,9 @@ struct CanvasView: View {
                             geometry: EdgeGeometry(from: a, to: b, connection: c, transform: t),
                             connection: c,
                             selected: ws.selection == .connection(c.id),
-                            scale: t.scale
+                            scale: t.scale,
+                            cosmos: AppSettings.shared.isCosmos,
+                            animate: animate
                         )
                         .opacity(isDimmed(a) || isDimmed(b) ? 0.12 : 1)
                         .onTapGesture { ws.select(.connection(c.id)) }
@@ -110,12 +119,17 @@ struct CanvasView: View {
     /// Фон холста: потянул — двигаешь холст, коснулся — снял выделение,
     /// удержал палец на месте (время — в настройках) — новая заметка.
     private func background(_ t: CanvasTransform) -> some View {
-        Color.canvas
-            .overlay {
+        ZStack {
+            if AppSettings.shared.isCosmos {
+                CosmicBackground(transform: t, animate: animate, showGrid: AppSettings.shared.showGrid)
+            } else {
+                Color.canvas
                 if AppSettings.shared.showGrid {
-                    DotGrid(transform: t).allowsHitTesting(false)
+                    DotGrid(transform: t)
                 }
             }
+        }
+        .allowsHitTesting(true)
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 6)
@@ -263,7 +277,10 @@ struct CanvasView: View {
     private func finishLink(from source: Node, at point: CGPoint, moved: Bool, _ t: CanvasTransform) {
         let inheritedTheme = source.isRoot ? nil : source.theme
         guard moved else {
-            let p = CGPoint(x: source.x + source.size.width / 2 + 190, y: source.y + .random(in: -40...40))
+            // На узком экране (iPhone) — снизу, чтобы не уходила за край; на широком — справа.
+            let p = t.size.width < 600
+                ? CGPoint(x: source.x + .random(in: -30...30), y: source.y + source.size.height / 2 + 120)
+                : CGPoint(x: source.x + source.size.width / 2 + 190, y: source.y + .random(in: -40...40))
             let new = ws.createNode(at: p, theme: inheritedTheme)
             ws.connect(from: source.id, to: new.id)
             return
