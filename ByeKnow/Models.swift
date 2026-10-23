@@ -151,7 +151,9 @@ final class Node {
 
     var size: CGSize { isRoot ? CGSize(width: 170, height: 170) : shape.size }
 
-    var displayTitle: String { title.isEmpty ? "Новая заметка" : title }
+    var hasTitle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    var displayTitle: String { hasTitle ? title : "Новая заметка" }
 
     var sortedBlocks: [NoteBlock] { blocks.sorted { $0.order < $1.order } }
 

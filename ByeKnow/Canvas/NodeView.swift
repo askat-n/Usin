@@ -50,7 +50,7 @@ struct NodeView: View {
                     }
             } else {
                 Text(node.isRoot ? node.title : node.displayTitle)
-                    .opacity(node.title.isEmpty ? 0.4 : 1)
+                    .opacity(node.hasTitle ? 1 : 0.4)
                     .lineLimit(node.shape == .card ? 2 : 4)
             }
         }

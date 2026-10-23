@@ -13,7 +13,7 @@ struct CanvasView: View {
     @State private var press: HoldPress?
     @State private var holdTask: Task<Void, Never>?
     @State private var createdCount = 0
-    @GestureState private var pressedNodeID: UUID?
+    @State private var pressedNodeID: UUID?
 
     /// Сколько секунд держать палец: на пустом месте — новая заметка, на заметке — переименовать.
     static let holdDuration: Double = 1.25
@@ -189,23 +189,20 @@ struct CanvasView: View {
         .opacity(isDimmed(node) ? 0.15 : 1)
         .position(t.toScreen(node.position))
         .gesture(nodeDrag(node), isEnabled: !editing)
-        .simultaneousGesture(renameHold(node), isEnabled: !editing)
+        // Порядок важен: сначала касания, потом удержание — иначе удержание глушит касания.
         .onTapGesture(count: 2) {
             if node.isRoot { ws.startRenaming(node) } else { ws.open(node) }
         }
         .onTapGesture {
             if !editing { ws.select(.node(node.id)) }
         }
-    }
-
-    /// Удержал палец на заметке — можно сразу менять название.
-    private func renameHold(_ node: Node) -> some Gesture {
-        LongPressGesture(minimumDuration: Self.holdDuration, maximumDistance: 6)
-            .updating($pressedNodeID) { _, state, _ in state = node.id }
-            .onEnded { _ in
-                ws.startRenaming(node)
-                createdCount += 1
-            }
+        .onLongPressGesture(minimumDuration: Self.holdDuration, maximumDistance: 6) {
+            guard !editing else { return }
+            ws.startRenaming(node)
+            createdCount += 1
+        } onPressingChanged: { pressing in
+            pressedNodeID = pressing && !editing ? node.id : nil
+        }
     }
 
     private func nodeDrag(_ node: Node) -> some Gesture {
