@@ -44,7 +44,7 @@ struct WorkspaceCommands: Commands {
         CommandMenu("Холст") {
             Button("Все заметки…") { ws.showAllNotes = true }
                 .keyboardShortcut("k")
-            Button("К центру") { ws.goHome() }
+            Button("К сфере ByeKnow") { ws.activeTab = nil; ws.goHome() }
                 .keyboardShortcut("0")
             Button("Приблизить") { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
                 .keyboardShortcut("=")

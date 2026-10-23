@@ -35,6 +35,7 @@ final class Workspace {
         self.context = context
         ensureRoot()
         restoreTabs()
+        centerOnRoot()
     }
 
     // MARK: - Lookup
@@ -202,11 +203,17 @@ final class Workspace {
 
     // MARK: - Camera
 
+    /// Вернуться к сфере ByeKnow — где бы она ни стояла.
     func goHome() {
-        withAnimation(.snappy) {
-            offset = .zero
-            scale = 1
-        }
+        withAnimation(.snappy) { centerOnRoot() }
+    }
+
+    private func centerOnRoot() {
+        var d = FetchDescriptor<Node>(predicate: #Predicate { $0.isRoot == true })
+        d.fetchLimit = 1
+        let root = try? context.fetch(d).first
+        scale = 1
+        offset = CGSize(width: -(root?.x ?? 0), height: -(root?.y ?? 0))
     }
 
     func resetZoom() {

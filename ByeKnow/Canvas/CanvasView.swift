@@ -10,6 +10,19 @@ struct CanvasView: View {
     @State private var zoomOrigin: (scale: CGFloat, offset: CGSize)?
     @State private var dragOrigin: (id: UUID, position: CGPoint)?
     @State private var linkDraft: (from: UUID, point: CGPoint)?
+    @State private var press: HoldPress?
+    @State private var holdTask: Task<Void, Never>?
+    @State private var createdCount = 0
+
+    /// Сколько секунд держать палец на пустом месте, чтобы появилась заметка.
+    static let holdDuration: Double = 3
+
+    struct HoldPress {
+        let id = UUID()
+        var location: CGPoint
+        var moved = false
+        var fired = false
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -45,6 +58,13 @@ struct CanvasView: View {
                     nodeView(node, t)
                 }
 
+                if let p = press, !p.moved, !p.fired {
+                    HoldRing(duration: Self.holdDuration)
+                        .id(p.id)
+                        .position(p.location)
+                        .allowsHitTesting(false)
+                }
+
                 if case .node(let id) = ws.selection, ws.editingTitleID != id, let n = byID[id] {
                     linkHandle(n, t)
                 }
@@ -59,6 +79,7 @@ struct CanvasView: View {
             .coordinateSpace(.named("canvas"))
             .simultaneousGesture(magnify(t))
             .clipped()
+            .sensoryFeedback(.impact, trigger: createdCount)
             .onAppear {
                 ws.canvasSize = geo.size
                 ws.canvasFrame = geo.frame(in: .global)
@@ -85,13 +106,16 @@ struct CanvasView: View {
 
     // MARK: - Background
 
+    /// Фон холста: потянул — двигаешь холст, коснулся — снял выделение,
+    /// удержал палец на месте `holdDuration` секунд — новая заметка.
     private func background(_ t: CanvasTransform) -> some View {
         Color.canvas
             .overlay { DotGrid(transform: t).allowsHitTesting(false) }
             .contentShape(Rectangle())
             .gesture(
-                DragGesture(minimumDistance: 2)
+                DragGesture(minimumDistance: 6)
                     .onChanged { v in
+                        cancelHold()
                         let origin = panOrigin ?? ws.offset
                         panOrigin = origin
                         ws.offset = CGSize(width: origin.width + v.translation.width,
@@ -99,12 +123,44 @@ struct CanvasView: View {
                     }
                     .onEnded { _ in panOrigin = nil }
             )
-            .onTapGesture(count: 2) { location in
-                ws.createNode(at: t.toWorld(location))
-            }
-            .onTapGesture {
-                ws.select(.empty)
-            }
+            .onTapGesture { ws.select(.empty) }
+            // Сырые касания приходят сразу, даже если палец не двигается.
+            .simultaneousGesture(
+                SpatialEventGesture()
+                    .onChanged { events in
+                        guard events.count == 1, let e = events.first, e.phase == .active else {
+                            cancelHold()
+                            return
+                        }
+                        if press == nil {
+                            press = HoldPress(location: e.location)
+                            startHoldTimer(t)
+                        } else if let p = press,
+                                  hypot(e.location.x - p.location.x, e.location.y - p.location.y) > 6 {
+                            cancelHold()
+                        }
+                    }
+                    .onEnded { _ in
+                        holdTask?.cancel()
+                        press = nil
+                    }
+            )
+    }
+
+    private func startHoldTimer(_ t: CanvasTransform) {
+        holdTask?.cancel()
+        holdTask = Task {
+            try? await Task.sleep(for: .seconds(Self.holdDuration))
+            guard !Task.isCancelled, let p = press, !p.moved else { return }
+            press?.fired = true
+            ws.createNode(at: t.toWorld(p.location))
+            createdCount += 1
+        }
+    }
+
+    private func cancelHold() {
+        holdTask?.cancel()
+        press?.moved = true
     }
 
     // MARK: - Nodes
@@ -222,6 +278,7 @@ struct CanvasView: View {
     private func magnify(_ t: CanvasTransform) -> some Gesture {
         MagnifyGesture(minimumScaleDelta: 0.01)
             .onChanged { v in
+                if zoomOrigin == nil { cancelHold() }
                 let origin = zoomOrigin ?? (ws.scale, ws.offset)
                 zoomOrigin = origin
                 let s = min(max(origin.scale * v.magnification, Workspace.minScale), Workspace.maxScale)
@@ -250,13 +307,38 @@ struct CanvasView: View {
             }
         case .empty:
             if nodes.count <= 1 {
-                Text("Дважды нажми на пустое место — появится заметка")
+                Text("Удержи палец на пустом месте 3 секунды — появится заметка")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .glassEffect(.regular, in: .capsule)
             }
+        }
+    }
+}
+
+/// Кольцо, которое заполняется, пока держишь палец на пустом месте.
+private struct HoldRing: View {
+    let duration: Double
+    @State private var progress: CGFloat = 0
+    @State private var visible = false
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Color.accentColor.opacity(0.15), lineWidth: 4)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: 56, height: 56)
+        .opacity(visible ? 1 : 0)
+        .task {
+            // Короткое касание не показывает кольцо.
+            try? await Task.sleep(for: .milliseconds(250))
+            withAnimation(.easeOut(duration: 0.15)) { visible = true }
+            withAnimation(.linear(duration: duration - 0.25)) { progress = 1 }
         }
     }
 }

@@ -284,7 +284,7 @@ struct ZoomControls: View {
             .help("100%")
             ToolButton(icon: "minus", help: "Отдалить") { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
             Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 20, height: 1).padding(.vertical, 3)
-            ToolButton(icon: "scope", help: "К центру") { ws.goHome() }
+            ToolButton(icon: "scope", help: "К сфере ByeKnow") { ws.goHome() }
         }
         .padding(5)
         .glassEffect(.regular, in: .capsule)
