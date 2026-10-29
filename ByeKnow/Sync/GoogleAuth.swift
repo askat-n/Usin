@@ -18,11 +18,14 @@ enum GoogleConfig {
 enum SyncError: LocalizedError {
     case notSignedIn
     case noAuthCode
+    /// Google не выдал ключ для долгого доступа (refresh token).
+    case noRefreshToken
     case server(Int, String)
 
     var errorDescription: String? {
         switch self {
         case .notSignedIn, .noAuthCode: tr("Войди в Google ещё раз")
+        case .noRefreshToken: tr("Google не выдал постоянный доступ — подключи Google Drive ещё раз")
         case .server(let code, let message): "\(code): \(message)"
         }
     }
@@ -37,6 +40,11 @@ final class GoogleAuth {
     private var refreshToken: String? = Keychain.read(refreshKey)
     private var accessToken: String?
     private var expiresAt = Date.distantPast
+
+    init() {
+        // Ключ, сохранённый старой версией, пересохраняем с доступом «только это устройство».
+        if let refreshToken { Keychain.save(refreshToken, for: Self.refreshKey) }
+    }
 
     /// Токен сохранён на устройстве — значит, Drive подключён.
     var isSignedIn: Bool { Keychain.read(Self.refreshKey) != nil }
@@ -54,7 +62,8 @@ final class GoogleAuth {
             URLQueryItem(name: "scope", value: GoogleConfig.scopes),
             URLQueryItem(name: "code_challenge", value: challenge),
             URLQueryItem(name: "code_challenge_method", value: "S256"),
-            URLQueryItem(name: "prompt", value: "select_account"),
+            // consent — Google каждый раз выдаёт refresh token (иначе при повторном входе может не выдать).
+            URLQueryItem(name: "prompt", value: "select_account consent"),
         ]
         return (components.url!, verifier)
     }
@@ -79,7 +88,7 @@ final class GoogleAuth {
             "redirect_uri": GoogleConfig.redirectURI,
             "client_id": GoogleConfig.clientID,
         ])
-        guard let refresh = json["refresh_token"] as? String else { throw SyncError.noAuthCode }
+        guard let refresh = json["refresh_token"] as? String else { throw SyncError.noRefreshToken }
         refreshToken = refresh
         store(json)
         if let idToken = json["id_token"] as? String { email = Self.email(fromIDToken: idToken) }
@@ -190,7 +199,8 @@ enum Keychain {
         delete(key)
         var q = query(key)
         q[kSecValueData as String] = Data(value.utf8)
-        q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        // Только это устройство: ключ не переносится в резервные копии и на другие устройства.
+        q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         SecItemAdd(q as CFDictionary, nil)
     }
 

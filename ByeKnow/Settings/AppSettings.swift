@@ -240,6 +240,7 @@ private let englishStrings: [String: String] = [
     "Нет": "No",
     "Войди в Google ещё раз": "Sign in to Google again",
     "Нет интернета или Google не отвечает": "No internet or Google is not responding",
+    "Google не выдал постоянный доступ — подключи Google Drive ещё раз": "Google didn't grant lasting access — connect Google Drive again",
     "Google Drive не подключён": "Google Drive is not connected",
     "Все изменения сохранены в Google Drive": "All changes saved to Google Drive",
     "Сохранение…": "Saving…",

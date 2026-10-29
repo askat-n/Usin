@@ -11,16 +11,24 @@ struct DriveFile: Decodable {
 struct DriveClient {
     let token: String
 
+    /// Все файлы скрытой папки — постранично, чтобы ничего не потерять, даже если их больше 1000.
     func list() async throws -> [DriveFile] {
-        var components = URLComponents(string: "https://www.googleapis.com/drive/v3/files")!
-        components.queryItems = [
-            URLQueryItem(name: "spaces", value: "appDataFolder"),
-            URLQueryItem(name: "fields", value: "files(id,name,version)"),
-            URLQueryItem(name: "pageSize", value: "1000"),
-        ]
-        struct Response: Decodable { let files: [DriveFile] }
-        let data = try await send(URLRequest(url: components.url!))
-        return try JSONDecoder().decode(Response.self, from: data).files
+        struct Response: Decodable { let files: [DriveFile]; let nextPageToken: String? }
+        var result: [DriveFile] = []
+        var pageToken: String?
+        repeat {
+            var components = URLComponents(string: "https://www.googleapis.com/drive/v3/files")!
+            components.queryItems = [
+                URLQueryItem(name: "spaces", value: "appDataFolder"),
+                URLQueryItem(name: "fields", value: "nextPageToken,files(id,name,version)"),
+                URLQueryItem(name: "pageSize", value: "1000"),
+            ]
+            if let pageToken { components.queryItems?.append(URLQueryItem(name: "pageToken", value: pageToken)) }
+            let page = try JSONDecoder().decode(Response.self, from: try await send(URLRequest(url: components.url!)))
+            result += page.files
+            pageToken = page.nextPageToken
+        } while pageToken != nil
+        return result
     }
 
     func download(_ id: String) async throws -> Data {
