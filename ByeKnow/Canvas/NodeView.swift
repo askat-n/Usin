@@ -1,6 +1,12 @@
 import SwiftUI
 
-struct NodeView: View {
+struct NodeView: View, Equatable {
+    /// Изменения самой заметки (название, цвет…) SwiftUI и так отслеживает через модель;
+    /// здесь сравниваем только то, что приходит снаружи.
+    static func == (a: NodeView, b: NodeView) -> Bool {
+        a.node === b.node && a.selected == b.selected && a.isOpen == b.isOpen && a.editing == b.editing
+    }
+
     @Bindable var node: Node
     var selected: Bool
     var isOpen: Bool

@@ -27,11 +27,17 @@ struct EdgeGeometry {
     let handle: CGPoint
     let curved: Bool
 
-    /// `drift` — смещение заметки в мире холста (плавание в «Классическом»).
+    /// `drift` — смещение заметки в мире холста (живой граф).
     init(from a: Node, to b: Node, connection: Connection, transform t: CanvasTransform,
          drift: (Node) -> CGPoint = { _ in .zero }) {
-        let ca = t.toScreen(a.position + drift(a))
-        let cb = t.toScreen(b.position + drift(b))
+        self.init(from: GraphNode(a), to: GraphNode(b), connection: connection, transform: t,
+                  driftA: drift(a), driftB: drift(b))
+    }
+
+    init(from a: GraphNode, to b: GraphNode, connection: Connection, transform t: CanvasTransform,
+         driftA: CGPoint = .zero, driftB: CGPoint = .zero) {
+        let ca = t.toScreen(a.position + driftA)
+        let cb = t.toScreen(b.position + driftB)
         let mid = Self.midpoint(ca, cb)
         let bend = CGPoint(x: connection.bendX * t.scale, y: connection.bendY * t.scale)
         let curved = connection.style == .curved && (bend.x != 0 || bend.y != 0)
@@ -73,7 +79,7 @@ struct EdgeGeometry {
     }
 
     /// Точка на краю фигуры в направлении `target`.
-    static func boundary(of node: Node, center c: CGPoint, scale: CGFloat, toward target: CGPoint, gap: CGFloat) -> CGPoint {
+    static func boundary(of node: GraphNode, center c: CGPoint, scale: CGFloat, toward target: CGPoint, gap: CGFloat) -> CGPoint {
         let dx = target.x - c.x, dy = target.y - c.y
         let len = hypot(dx, dy)
         guard len > 0.001 else { return c }
@@ -81,7 +87,7 @@ struct EdgeGeometry {
         let w = node.size.width * scale / 2
         let h = node.size.height * scale / 2
         let k: CGFloat
-        if node.isRoot || node.shape == .circle {
+        if node.round {
             k = w
         } else {
             let kx = abs(ux) > 0.0001 ? w / abs(ux) : .infinity
@@ -97,24 +103,24 @@ extension CGPoint {
     static func + (a: CGPoint, b: CGPoint) -> CGPoint { CGPoint(x: a.x + b.x, y: a.y + b.y) }
 }
 
-/// Плавание заметок: каждая медленно описывает свою «восьмёрку» вокруг места, где её поставили.
-struct Drift {
-    /// nil — плавание выключено.
-    let time: Double?
+/// Слепок заметки для одного кадра: читать свойства из базы каждый раз дорого,
+/// а холст в живом графе пересчитывается 30 раз в секунду.
+struct GraphNode {
+    let id: UUID
+    let position: CGPoint
+    let size: CGSize
+    let round: Bool
+    let isRoot: Bool
 
-    static let amplitude: Double = 9
+    init(_ node: Node) {
+        id = node.id
+        position = node.position
+        size = node.size
+        isRoot = node.isRoot
+        round = node.isRoot || node.shape == .circle
+    }
 
-    func offset(_ node: Node) -> CGPoint {
-        guard let time else { return .zero }
-        let s = node.id.seed
-        let p1 = Double(s & 0xFFFF) / 65535 * .pi * 2
-        let p2 = Double((s >> 16) & 0xFFFF) / 65535 * .pi * 2
-        let f = 0.75 + Double((s >> 32) & 0xFF) / 255 * 0.5      // у каждой — свой темп
-        let a = node.isRoot ? Self.amplitude * 0.5 : Self.amplitude
-        let w = 2 * Double.pi / 11 * f
-        return CGPoint(
-            x: a * (0.75 * sin(time * w + p1) + 0.25 * sin(time * w * 2.3 + p2)),
-            y: a * (0.75 * cos(time * w * 0.83 + p2) + 0.25 * sin(time * w * 1.7 + p1))
-        )
+    func contains(_ p: CGPoint, offset o: CGPoint) -> Bool {
+        abs(p.x - position.x - o.x) <= size.width / 2 && abs(p.y - position.y - o.y) <= size.height / 2
     }
 }

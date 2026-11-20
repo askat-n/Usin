@@ -89,7 +89,7 @@ final class AppSettings {
         didSet { defaults.set(cosmosMotion, forKey: "settings.cosmosMotion") }
     }
 
-    /// «Классический»: заметки и стрелки плавно покачиваются на месте.
+    /// Живой граф: заметки плавают и пружинят во всех стилях.
     var classicMotion: Bool {
         didSet { defaults.set(classicMotion, forKey: "settings.classicMotion") }
     }
@@ -284,8 +284,9 @@ private let englishStrings: [String: String] = [
     "Терминал": "Terminal",
     "Тёмные стили всегда в тёмном оформлении.": "Dark styles are always in dark appearance.",
     "Без анимации холст не тратит батарею.": "Without animation the canvas doesn't use battery.",
-    "Плавающие заметки": "Floating notes",
-    "Заметки и стрелки плавно покачиваются на холсте.": "Notes and arrows gently float on the canvas.",
+    "Живой граф": "Living graph",
+    "Заметки плавают и пружинят, как граф: потяни заметку — соседи по стрелкам потянутся за ней.":
+        "Notes float and bounce like a graph: drag a note and its linked neighbors follow.",
 
     // Файлы и боковая панель
     "Файлы": "Files",

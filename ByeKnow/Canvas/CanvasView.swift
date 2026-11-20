@@ -8,11 +8,23 @@ struct CanvasView: View {
 
     /// Анимация только когда приложение на переднем плане — в фоне батарея не тратится.
     private var animate: Bool { AppSettings.shared.cosmosMotion && !reduceMotion && scenePhase == .active }
-    /// «Классический»: заметки медленно плавают на месте (можно выключить в настройках).
+    /// Живой граф: заметки плавают и пружинят (можно выключить в настройках).
     private var drifting: Bool {
-        AppSettings.shared.canvasStyle == .classic && AppSettings.shared.classicMotion
-            && !reduceMotion && scenePhase == .active
+        AppSettings.shared.classicMotion && !reduceMotion && scenePhase == .active && windowActive
     }
+    #if os(macOS)
+    /// Mac: когда работаешь в другом приложении, граф замирает — батарея не тратится.
+    @Environment(\.controlActiveState) private var controlActiveState
+    private var windowActive: Bool { controlActiveState != .inactive }
+    #else
+    private let windowActive = true
+    #endif
+    @State private var physics = GraphPhysics()
+    /// Граф пружинит (или заметку тянут) — 60 кадров; спокойное плавание медленное — хватает 12.
+    @State private var lively = false
+    private var frameInterval: Double { lively || dragOrigin != nil ? 1.0 / 60 : 1.0 / 12 }
+    /// Где курсор (Mac). Заметку под ним ищем каждый кадр — она ведь плывёт.
+    @State private var pointer: CGPoint?
     /// Заметки в корзине на холсте не показываются (и их стрелки тоже).
     @Query(filter: #Predicate<Node> { $0.deletedAt == nil }, sort: \Node.createdAt) private var nodes: [Node]
     @Query(sort: \Connection.createdAt) private var connections: [Connection]
@@ -46,20 +58,32 @@ struct CanvasView: View {
                     .ignoresSafeArea(.container, edges: .bottom)
 
                 // Всё, что зависит от положения заметок, — внутри часов: в «Классическом» заметки плавают.
-                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !drifting)) { tl in
-                    let d = Drift(time: drifting ? tl.date.timeIntervalSinceReferenceDate : nil)
+                TimelineView(.animation(minimumInterval: frameInterval, paused: !drifting)) { tl in
+                    let snaps = nodes.map(GraphNode.init)
+                    let snapByID = Dictionary(snaps.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+                    let d = drifting
+                        ? physics.step(time: tl.date.timeIntervalSinceReferenceDate, nodes: snaps,
+                                       links: connections.map { ($0.fromID, $0.toID) }, held: dragOrigin?.id)
+                        : Drift.none
+                    let hoveredID = hoveredNode(t, d, snaps)
+                    let _ = updateLively(d.restless)
+                    let lit = litIDs(hoveredID)
                     ZStack {
                         ForEach(connections) { c in
-                            if let a = byID[c.fromID], let b = byID[c.toID] {
+                            if let a = byID[c.fromID], let b = byID[c.toID],
+                                   let ga = snapByID[c.fromID], let gb = snapByID[c.toID] {
                                 ConnectionView(
-                                    geometry: EdgeGeometry(from: a, to: b, connection: c, transform: t, drift: d.offset),
+                                    geometry: EdgeGeometry(from: ga, to: gb, connection: c, transform: t,
+                                                           driftA: d.offset(ga.id), driftB: d.offset(gb.id)),
                                     connection: c,
-                                    selected: ws.selection == .connection(c.id),
+                                    selected: ws.selection == .connection(c.id)
+                                        || (lit != nil && (c.fromID == hoveredID || c.toID == hoveredID)),
                                     scale: t.scale,
                                     cosmos: AppSettings.shared.isCosmos,
                                     terminal: AppSettings.shared.isTerminal
                                 )
-                                .opacity(isDimmed(a) || isDimmed(b) ? 0.12 : 1)
+                                .opacity(isDimmed(a) || isDimmed(b) ? 0.12
+                                         : (lit != nil && c.fromID != hoveredID && c.toID != hoveredID ? 0.2 : 1))
                                 .onTapGesture { ws.select(.connection(c.id)) }
                             }
                         }
@@ -74,18 +98,18 @@ struct CanvasView: View {
                         }
 
                         if AppSettings.shared.isCosmos {
-                            cosmicLayers(t, byID: byID)
+                            cosmicLayers(t, byID: byID, d, lit: lit)
                         } else if AppSettings.shared.isTerminal {
-                            terminalLayers(t, byID: byID)
+                            terminalLayers(t, byID: byID, d)
                         }
 
                         ForEach(nodes) { node in
-                            nodeView(node, t, d)
+                            nodeView(node, t, d, lit: lit, hovered: hoveredID == node.id)
                         }
 
                         if AppSettings.shared.isTerminal, let root = nodes.first(where: \.isRoot),
                            ws.editingTitleID != root.id {
-                            terminalCaret(root, t)
+                            terminalCaret(root, t, d)
                         }
 
                         if case .node(let id) = ws.selection, ws.editingTitleID != id, let n = byID[id] {
@@ -111,6 +135,12 @@ struct CanvasView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .coordinateSpace(.named("canvas"))
+            .onContinuousHover(coordinateSpace: .named("canvas")) { phase in
+                switch phase {
+                case .active(let p): pointer = p
+                case .ended: pointer = nil
+                }
+            }
             .simultaneousGesture(magnify(t))
             .clipped()
             .sensoryFeedback(.impact, trigger: createdCount)
@@ -220,35 +250,37 @@ struct CanvasView: View {
 
     /// Огоньки на стрелках, свечение заметок и живая сфера — на Core Animation.
     @ViewBuilder
-    private func cosmicLayers(_ t: CanvasTransform, byID: [UUID: Node]) -> some View {
+    private func cosmicLayers(_ t: CanvasTransform, byID: [UUID: Node], _ d: Drift, lit: Set<UUID>?) -> some View {
         let k = max(0.6, min(t.scale, 1.5))
         let edges: [CosmicFlows.Edge] = connections.compactMap { c in
             guard let a = byID[c.fromID], let b = byID[c.toID] else { return nil }
-            let g = EdgeGeometry(from: a, to: b, connection: c, transform: t)
+            let g = EdgeGeometry(from: a, to: b, connection: c, transform: t, drift: d.offset)
             return CosmicFlows.Edge(id: c.id, path: g.path, width: 2.6 * k,
                                     opacity: isDimmed(a) || isDimmed(b) ? 0.12 : 1)
         }
         let glows: [CosmicFlows.Glow] = nodes.filter { !$0.isRoot }.map { node in
             let size = CGSize(width: node.size.width * t.scale, height: node.size.height * t.scale)
-            let c = t.toScreen(node.position)
+            let c = t.toScreen(node.position + d.offset(node))
             let rect = CGRect(x: c.x - size.width / 2, y: c.y - size.height / 2, width: size.width, height: size.height)
             return CosmicFlows.Glow(id: node.id, path: node.shape.outline.path(in: rect), color: node.glowColor,
-                                    radius: 14 * t.scale, opacity: isDimmed(node) ? 0.15 : 1, seed: node.id.seed)
+                                    radius: 14 * t.scale,
+                                    opacity: isDimmed(node) ? 0.15 : (lit.map { $0.contains(node.id) } == false ? 0.3 : 1),
+                                    seed: node.id.seed)
         }
         CosmicFlows(edges: edges, glows: glows, animate: animate)
         if let root = nodes.first(where: \.isRoot) {
-            CosmicOrb(center: t.toScreen(root.position), diameter: root.size.width * t.scale, scale: t.scale,
+            CosmicOrb(center: t.toScreen(root.position + d.offset(root)), diameter: root.size.width * t.scale, scale: t.scale,
                       base: root.glowColor, animate: animate)
         }
     }
 
     /// «Пакеты данных» на стрелках и мигающий курсор у сферы — на Core Animation.
     @ViewBuilder
-    private func terminalLayers(_ t: CanvasTransform, byID: [UUID: Node]) -> some View {
+    private func terminalLayers(_ t: CanvasTransform, byID: [UUID: Node], _ d: Drift) -> some View {
         let k = max(0.6, min(t.scale, 1.5))
         let edges: [TerminalFlows.Edge] = connections.compactMap { c in
             guard let a = byID[c.fromID], let b = byID[c.toID] else { return nil }
-            let g = EdgeGeometry(from: a, to: b, connection: c, transform: t)
+            let g = EdgeGeometry(from: a, to: b, connection: c, transform: t, drift: d.offset)
             return TerminalFlows.Edge(id: c.id, path: g.path, width: 2.4 * k,
                                       opacity: isDimmed(a) || isDimmed(b) ? 0.12 : 1,
                                       color: c.colorIndex == 0 ? Term.green : Palette.swatch(c.colorIndex).ink)
@@ -257,10 +289,10 @@ struct CanvasView: View {
     }
 
     /// Курсор сразу после надписи на сфере (шрифт моноширинный — ширину легко посчитать).
-    private func terminalCaret(_ root: Node, _ t: CanvasTransform) -> some View {
+    private func terminalCaret(_ root: Node, _ t: CanvasTransform, _ d: Drift) -> some View {
         let fontSize: CGFloat = 20
         let textWidth = CGFloat(min(root.title.count, 10)) * fontSize * Term.charWidth
-        let c = t.toScreen(root.position)
+        let c = t.toScreen(root.position + d.offset(root))
         let rect = CGRect(x: c.x + (textWidth / 2 + 3) * t.scale, y: c.y - fontSize * 0.55 * t.scale,
                           width: fontSize * 0.55 * t.scale, height: fontSize * 1.1 * t.scale)
         return TerminalCaret(rect: rect, color: Term.ink(root.inkIndex), animate: animate)
@@ -274,7 +306,31 @@ struct CanvasView: View {
         return node.theme?.id != filter
     }
 
-    private func nodeView(_ node: Node, _ t: CanvasTransform, _ d: Drift) -> some View {
+    /// Заметка под курсором и её соседи по стрелкам (nil — курсор ни на чём).
+    private func litIDs(_ hoveredID: UUID?) -> Set<UUID>? {
+        guard let id = hoveredID, dragOrigin == nil else { return nil }
+        var set: Set<UUID> = [id]
+        for c in connections {
+            if c.fromID == id { set.insert(c.toID) }
+            if c.toID == id { set.insert(c.fromID) }
+        }
+        return set
+    }
+
+    private func updateLively(_ restless: Bool) {
+        guard restless != lively else { return }
+        // Менять состояние прямо во время отрисовки нельзя — на следующем шаге.
+        DispatchQueue.main.async { lively = restless }
+    }
+
+    /// Верхняя заметка под курсором — с учётом того, куда она уплыла.
+    private func hoveredNode(_ t: CanvasTransform, _ d: Drift, _ snaps: [GraphNode]) -> UUID? {
+        guard let pointer, panOrigin == nil, zoomOrigin == nil else { return nil }
+        let world = t.toWorld(pointer)
+        return snaps.last { $0.contains(world, offset: d.offset($0.id)) }?.id
+    }
+
+    private func nodeView(_ node: Node, _ t: CanvasTransform, _ d: Drift, lit: Set<UUID>?, hovered: Bool) -> some View {
         let editing = ws.editingTitleID == node.id
         return NodeView(
             node: node,
@@ -283,8 +339,13 @@ struct CanvasView: View {
             editing: editing,
             onEndEditing: { ws.editingTitleID = nil }
         )
+        // Содержимое заметки не пересчитывается каждый кадр — двигается только её место.
+        .equatable()
         .scaleEffect(t.scale)
-        .opacity(isDimmed(node) ? 0.15 : 1)
+        .opacity(isDimmed(node) ? 0.15 : (lit.map { $0.contains(node.id) } == false ? 0.35 : 1))
+        .scaleEffect(hovered && dragOrigin == nil ? 1.04 : 1)
+        .animation(.easeOut(duration: 0.2), value: lit)
+        .animation(.spring(duration: 0.3, bounce: 0.4), value: hovered)
         .position(t.toScreen(node.position + d.offset(node)))
         .gesture(nodeDrag(node), isEnabled: !editing)
         // Двойное касание считаем сами: так одно касание выделяет сразу, без ожидания второго.

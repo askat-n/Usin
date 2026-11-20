@@ -45,14 +45,14 @@ struct SettingsView: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
-                        Toggle(tr("Плавающие заметки"), isOn: $settings.classicMotion)
-                        Text(tr("Заметки и стрелки плавно покачиваются на холсте.") + " " + tr("Без анимации холст не тратит батарею."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
 
                 Section(tr("Холст")) {
+                    Toggle(tr("Живой граф"), isOn: $settings.classicMotion)
+                    Text(tr("Заметки плавают и пружинят, как граф: потяни заметку — соседи по стрелкам потянутся за ней."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Picker(tr("Удержание для новой заметки"), selection: $settings.holdDuration) {
                         ForEach(AppSettings.holdOptions, id: \.self) { value in
                             Text(value.formatted(.number.precision(.fractionLength(0...2))) + " " + tr("с")).tag(value)

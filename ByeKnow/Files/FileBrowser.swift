@@ -47,6 +47,11 @@ struct FileSidebar: View {
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.6)
                     .foregroundStyle(.secondary)
+                FilesModeButton(active: ws.activeTab == nil && ws.home == .files) {
+                    ws.showHome(ws.activeTab == nil && ws.home == .files ? .canvas : .files)
+                    onOpen()
+                }
+                .padding(.leading, 6)
                 Spacer()
                 SidebarIconButton(icon: "plus", help: tr("Новая заметка во вкладке (⌘T)")) {
                     ws.newNoteTab()
@@ -86,6 +91,33 @@ struct FileSidebar: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+}
+
+/// «Файлы» — заметки плиткой вместо холста. Нажать ещё раз — обратно к холсту.
+private struct FilesModeButton: View {
+    let active: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: active ? "folder.fill" : "folder")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(tr("Файлы"))
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(active ? Color.accentColor : Color.secondary)
+            .padding(.horizontal, 8)
+            .frame(height: 22)
+            .background(active ? Color.accentColor.opacity(0.15) : Color.primary.opacity(hovering ? 0.08 : 0.04),
+                        in: Capsule())
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(tr("Заметки как файлы"))
     }
 }
 

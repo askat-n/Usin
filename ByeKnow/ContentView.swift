@@ -124,9 +124,6 @@ struct TabBar: View {
             TabChip(title: compact ? "" : tr("Холст"), icon: "circle.hexagongrid", active: ws.activeTab == nil && ws.home == .canvas) {
                 ws.showHome(.canvas)
             }
-            TabChip(title: compact ? "" : tr("Файлы"), icon: "folder", active: ws.activeTab == nil && ws.home == .files) {
-                ws.showHome(.files)
-            }
             if !ws.openTabs.isEmpty {
                 BarSeparator()
             }
