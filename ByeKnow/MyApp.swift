@@ -80,12 +80,20 @@ struct WorkspaceCommands: Commands {
             Button(tr("Все заметки…")) { ws.showAllNotes = true }
                 .keyboardShortcut("k")
             Divider()
-            Button(tr("К сфере ByeKnow")) { ws.activeTab = nil; ws.goHome() }
+            Button(tr("К сфере ByeKnow")) { ws.showHome(.canvas); ws.goHome() }
                 .keyboardShortcut("0")
             Button(tr("Приблизить")) { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
                 .keyboardShortcut("=")
             Button(tr("Отдалить")) { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
                 .keyboardShortcut("-")
+        }
+
+        CommandGroup(before: .toolbar) {
+            Button(tr("Боковая панель")) { withAnimation(.snappy) { ws.showSidebar.toggle() } }
+                .keyboardShortcut("s", modifiers: [.command, .control])
+            Button(tr("Файлы")) { ws.showHome(.files) }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+            Divider()
         }
 
         CommandMenu(tr("Вкладки")) {

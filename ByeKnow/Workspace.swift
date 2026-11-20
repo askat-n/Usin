@@ -25,9 +25,33 @@ final class Workspace {
     var editingTitleID: UUID?
     var filterThemeID: UUID?
 
-    // Вкладки: nil = холст
+    // Вкладки: nil = холст (или «Файлы»)
     var openTabs: [UUID] = []
     var activeTab: UUID?
+
+    /// Что показано, когда не открыта вкладка заметки: холст или заметки списком файлов.
+    enum Home: String { case canvas, files }
+    var home: Home = Home(rawValue: UserDefaults.standard.string(forKey: "home") ?? "") ?? .canvas {
+        didSet { UserDefaults.standard.set(home.rawValue, forKey: "home") }
+    }
+
+    /// Боковая панель с заметками, как проводник в редакторе кода.
+    var showSidebar: Bool = UserDefaults.standard.object(forKey: "showSidebar") as? Bool ?? {
+        #if os(macOS)
+        true
+        #else
+        false
+        #endif
+    }() {
+        didSet { UserDefaults.standard.set(showSidebar, forKey: "showSidebar") }
+    }
+
+    var isOnCanvas: Bool { activeTab == nil && home == .canvas }
+
+    func showHome(_ h: Home) {
+        activeTab = nil
+        home = h
+    }
 
     var showAllNotes = false
     var showSettings = false
@@ -89,7 +113,7 @@ final class Workspace {
 
     /// Новая заметка рядом с центром экрана.
     func createNodeAtViewCenter() {
-        activeTab = nil
+        showHome(.canvas)
         createNode(at: viewCenterPoint())
     }
 
@@ -170,7 +194,7 @@ final class Workspace {
 
     /// Копия заметки рядом с оригиналом — со всеми строками и картинками.
     func duplicateSelection() {
-        guard activeTab == nil, case .node(let id) = selection, let source = node(id), !source.isRoot else { return }
+        guard isOnCanvas, case .node(let id) = selection, let source = node(id), !source.isRoot else { return }
         let copy = Node(position: CGPoint(x: source.x + 40, y: source.y + 40))
         copy.title = source.title
         copy.shapeRaw = source.shapeRaw
@@ -192,12 +216,12 @@ final class Workspace {
 
     /// Открыть выбранную на холсте заметку во вкладке.
     func openSelection() {
-        guard activeTab == nil, case .node(let id) = selection, let n = node(id) else { return }
+        guard isOnCanvas, case .node(let id) = selection, let n = node(id) else { return }
         if n.isRoot { startRenaming(n) } else { open(n) }
     }
 
     func deleteSelection() {
-        guard activeTab == nil, editingTitleID == nil else { return }
+        guard isOnCanvas, editingTitleID == nil else { return }
         switch selection {
         case .node(let id):
             if let n = node(id) { delete(n) }
@@ -269,7 +293,7 @@ final class Workspace {
 
     /// 0 = холст, 1… = вкладки.
     func selectTab(at index: Int) {
-        if index == 0 { activeTab = nil }
+        if index == 0 { showHome(.canvas) }
         else if openTabs.indices.contains(index - 1) { activeTab = openTabs[index - 1] }
     }
 
@@ -280,7 +304,7 @@ final class Workspace {
     }
 
     func showOnCanvas(_ node: Node) {
-        activeTab = nil
+        showHome(.canvas)
         select(.node(node.id))
         withAnimation(.snappy) {
             offset = CGSize(width: -node.x * scale, height: -node.y * scale)

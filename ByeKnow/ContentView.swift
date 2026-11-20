@@ -15,21 +15,56 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.undoManager) private var undoManager
     @Query(filter: #Predicate<Node> { $0.deletedAt == nil }) private var nodes: [Node]
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var compact: Bool { sizeClass == .compact }
+    #else
+    private let compact = false
+    #endif
 
     var body: some View {
         @Bindable var ws = ws
         VStack(spacing: 0) {
             TabBar()
             Divider()
-            Group {
-                if let id = ws.activeTab, let node = nodes.first(where: { $0.id == id }) {
-                    NoteEditorView(node: node)
-                        .id(id)
-                } else {
-                    CanvasView()
+            HStack(spacing: 0) {
+                if ws.showSidebar && !compact {
+                    FileSidebar()
+                        .frame(width: 250)
+                        .background(Color.primary.opacity(0.025))
+                        .transition(.move(edge: .leading))
+                    Divider()
+                }
+                Group {
+                    if let id = ws.activeTab, let node = nodes.first(where: { $0.id == id }) {
+                        NoteEditorView(node: node)
+                            .id(id)
+                    } else if ws.home == .files {
+                        FilesView()
+                    } else {
+                        CanvasView()
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            // iPhone: панель выезжает поверх, тап мимо — закрывает.
+            .overlay(alignment: .leading) {
+                if ws.showSidebar && compact {
+                    ZStack(alignment: .leading) {
+                        Color.black.opacity(0.25)
+                            .ignoresSafeArea()
+                            .onTapGesture { withAnimation(.snappy) { ws.showSidebar = false } }
+                            .transition(.opacity)
+                        FileSidebar(onOpen: { withAnimation(.snappy) { ws.showSidebar = false } })
+                            .frame(width: 280)
+                            .background(appBackground.ignoresSafeArea())
+                            .overlay(alignment: .trailing) {
+                                Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1).ignoresSafeArea()
+                            }
+                            .transition(.move(edge: .leading))
+                    }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         // Под холстом (у полоски «домой» на iPhone) — тот же фон, без чёрной или белой полосы.
         .background(appBackground.ignoresSafeArea())
@@ -71,13 +106,26 @@ struct ContentView: View {
 
 struct TabBar: View {
     @Environment(Workspace.self) private var ws
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var compact: Bool { sizeClass == .compact }
+    #else
+    private let compact = false
+    #endif
     @Query(filter: #Predicate<Node> { $0.deletedAt == nil }) private var nodes: [Node]
 
     var body: some View {
         let byID = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         HStack(spacing: 6) {
-            TabChip(title: tr("Холст"), icon: "circle.hexagongrid", active: ws.activeTab == nil) {
-                ws.activeTab = nil
+            ToolButton(icon: "sidebar.left", active: ws.showSidebar,
+                       help: tr("Показать или скрыть боковую панель (⌃⌘S)")) {
+                withAnimation(.snappy) { ws.showSidebar.toggle() }
+            }
+            TabChip(title: compact ? "" : tr("Холст"), icon: "circle.hexagongrid", active: ws.activeTab == nil && ws.home == .canvas) {
+                ws.showHome(.canvas)
+            }
+            TabChip(title: compact ? "" : tr("Файлы"), icon: "folder", active: ws.activeTab == nil && ws.home == .files) {
+                ws.showHome(.files)
             }
             if !ws.openTabs.isEmpty {
                 BarSeparator()
@@ -125,7 +173,9 @@ struct TabChip: View {
             } else {
                 Circle().fill(color ?? Color.secondary.opacity(0.4)).frame(width: 7, height: 7)
             }
-            Text(title).lineLimit(1)
+            if !title.isEmpty {
+                Text(title).lineLimit(1)
+            }
             if let onClose, active || hovering {
                 Button(action: onClose) {
                     Image(systemName: "xmark")

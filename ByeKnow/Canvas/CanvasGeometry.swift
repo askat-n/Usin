@@ -27,9 +27,11 @@ struct EdgeGeometry {
     let handle: CGPoint
     let curved: Bool
 
-    init(from a: Node, to b: Node, connection: Connection, transform t: CanvasTransform) {
-        let ca = t.toScreen(a.position)
-        let cb = t.toScreen(b.position)
+    /// `drift` — смещение заметки в мире холста (плавание в «Классическом»).
+    init(from a: Node, to b: Node, connection: Connection, transform t: CanvasTransform,
+         drift: (Node) -> CGPoint = { _ in .zero }) {
+        let ca = t.toScreen(a.position + drift(a))
+        let cb = t.toScreen(b.position + drift(b))
         let mid = Self.midpoint(ca, cb)
         let bend = CGPoint(x: connection.bendX * t.scale, y: connection.bendY * t.scale)
         let curved = connection.style == .curved && (bend.x != 0 || bend.y != 0)
@@ -88,5 +90,31 @@ struct EdgeGeometry {
         }
         let d = min(k + gap, len)
         return CGPoint(x: c.x + ux * d, y: c.y + uy * d)
+    }
+}
+
+extension CGPoint {
+    static func + (a: CGPoint, b: CGPoint) -> CGPoint { CGPoint(x: a.x + b.x, y: a.y + b.y) }
+}
+
+/// Плавание заметок: каждая медленно описывает свою «восьмёрку» вокруг места, где её поставили.
+struct Drift {
+    /// nil — плавание выключено.
+    let time: Double?
+
+    static let amplitude: Double = 9
+
+    func offset(_ node: Node) -> CGPoint {
+        guard let time else { return .zero }
+        let s = node.id.seed
+        let p1 = Double(s & 0xFFFF) / 65535 * .pi * 2
+        let p2 = Double((s >> 16) & 0xFFFF) / 65535 * .pi * 2
+        let f = 0.75 + Double((s >> 32) & 0xFF) / 255 * 0.5      // у каждой — свой темп
+        let a = node.isRoot ? Self.amplitude * 0.5 : Self.amplitude
+        let w = 2 * Double.pi / 11 * f
+        return CGPoint(
+            x: a * (0.75 * sin(time * w + p1) + 0.25 * sin(time * w * 2.3 + p2)),
+            y: a * (0.75 * cos(time * w * 0.83 + p2) + 0.25 * sin(time * w * 1.7 + p1))
+        )
     }
 }

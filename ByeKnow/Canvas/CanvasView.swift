@@ -8,6 +8,11 @@ struct CanvasView: View {
 
     /// Анимация только когда приложение на переднем плане — в фоне батарея не тратится.
     private var animate: Bool { AppSettings.shared.cosmosMotion && !reduceMotion && scenePhase == .active }
+    /// «Классический»: заметки медленно плавают на месте (можно выключить в настройках).
+    private var drifting: Bool {
+        AppSettings.shared.canvasStyle == .classic && AppSettings.shared.classicMotion
+            && !reduceMotion && scenePhase == .active
+    }
     /// Заметки в корзине на холсте не показываются (и их стрелки тоже).
     @Query(filter: #Predicate<Node> { $0.deletedAt == nil }, sort: \Node.createdAt) private var nodes: [Node]
     @Query(sort: \Connection.createdAt) private var connections: [Connection]
@@ -40,43 +45,60 @@ struct CanvasView: View {
                     // Фон уходит под полоску «домой» на iPhone — без тёмной полосы снизу.
                     .ignoresSafeArea(.container, edges: .bottom)
 
-                ForEach(connections) { c in
-                    if let a = byID[c.fromID], let b = byID[c.toID] {
-                        ConnectionView(
-                            geometry: EdgeGeometry(from: a, to: b, connection: c, transform: t),
-                            connection: c,
-                            selected: ws.selection == .connection(c.id),
-                            scale: t.scale,
-                            cosmos: AppSettings.shared.isCosmos,
-                            terminal: AppSettings.shared.isTerminal
-                        )
-                        .opacity(isDimmed(a) || isDimmed(b) ? 0.12 : 1)
-                        .onTapGesture { ws.select(.connection(c.id)) }
+                // Всё, что зависит от положения заметок, — внутри часов: в «Классическом» заметки плавают.
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !drifting)) { tl in
+                    let d = Drift(time: drifting ? tl.date.timeIntervalSinceReferenceDate : nil)
+                    ZStack {
+                        ForEach(connections) { c in
+                            if let a = byID[c.fromID], let b = byID[c.toID] {
+                                ConnectionView(
+                                    geometry: EdgeGeometry(from: a, to: b, connection: c, transform: t, drift: d.offset),
+                                    connection: c,
+                                    selected: ws.selection == .connection(c.id),
+                                    scale: t.scale,
+                                    cosmos: AppSettings.shared.isCosmos,
+                                    terminal: AppSettings.shared.isTerminal
+                                )
+                                .opacity(isDimmed(a) || isDimmed(b) ? 0.12 : 1)
+                                .onTapGesture { ws.select(.connection(c.id)) }
+                            }
+                        }
+
+                        if let draft = linkDraft, let a = byID[draft.from] {
+                            Path { p in
+                                p.move(to: t.toScreen(a.position + d.offset(a)))
+                                p.addLine(to: draft.point)
+                            }
+                            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 5]))
+                            .allowsHitTesting(false)
+                        }
+
+                        if AppSettings.shared.isCosmos {
+                            cosmicLayers(t, byID: byID)
+                        } else if AppSettings.shared.isTerminal {
+                            terminalLayers(t, byID: byID)
+                        }
+
+                        ForEach(nodes) { node in
+                            nodeView(node, t, d)
+                        }
+
+                        if AppSettings.shared.isTerminal, let root = nodes.first(where: \.isRoot),
+                           ws.editingTitleID != root.id {
+                            terminalCaret(root, t)
+                        }
+
+                        if case .node(let id) = ws.selection, ws.editingTitleID != id, let n = byID[id] {
+                            linkHandle(n, t, d)
+                        }
+
+                        if case .connection(let id) = ws.selection,
+                           let c = connections.first(where: { $0.id == id }),
+                           let a = byID[c.fromID], let b = byID[c.toID] {
+                            bendHandle(c, a, b, t, d)
+                        }
                     }
-                }
-
-                if let draft = linkDraft, let a = byID[draft.from] {
-                    Path { p in
-                        p.move(to: t.toScreen(a.position))
-                        p.addLine(to: draft.point)
-                    }
-                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 5]))
-                    .allowsHitTesting(false)
-                }
-
-                if AppSettings.shared.isCosmos {
-                    cosmicLayers(t, byID: byID)
-                } else if AppSettings.shared.isTerminal {
-                    terminalLayers(t, byID: byID)
-                }
-
-                ForEach(nodes) { node in
-                    nodeView(node, t)
-                }
-
-                if AppSettings.shared.isTerminal, let root = nodes.first(where: \.isRoot),
-                   ws.editingTitleID != root.id {
-                    terminalCaret(root, t)
+                    .frame(width: geo.size.width, height: geo.size.height)
                 }
 
                 if let p = press, !p.moved, !p.fired {
@@ -86,15 +108,6 @@ struct CanvasView: View {
                         .allowsHitTesting(false)
                 }
 
-                if case .node(let id) = ws.selection, ws.editingTitleID != id, let n = byID[id] {
-                    linkHandle(n, t)
-                }
-
-                if case .connection(let id) = ws.selection,
-                   let c = connections.first(where: { $0.id == id }),
-                   let a = byID[c.fromID], let b = byID[c.toID] {
-                    bendHandle(c, a, b, t)
-                }
             }
             .frame(width: geo.size.width, height: geo.size.height)
             .coordinateSpace(.named("canvas"))
@@ -261,7 +274,7 @@ struct CanvasView: View {
         return node.theme?.id != filter
     }
 
-    private func nodeView(_ node: Node, _ t: CanvasTransform) -> some View {
+    private func nodeView(_ node: Node, _ t: CanvasTransform, _ d: Drift) -> some View {
         let editing = ws.editingTitleID == node.id
         return NodeView(
             node: node,
@@ -272,7 +285,7 @@ struct CanvasView: View {
         )
         .scaleEffect(t.scale)
         .opacity(isDimmed(node) ? 0.15 : 1)
-        .position(t.toScreen(node.position))
+        .position(t.toScreen(node.position + d.offset(node)))
         .gesture(nodeDrag(node), isEnabled: !editing)
         // Двойное касание считаем сами: так одно касание выделяет сразу, без ожидания второго.
         .onTapGesture {
@@ -324,8 +337,8 @@ struct CanvasView: View {
     // MARK: - Arrows
 
     /// Кнопка «+» справа от выбранной фигуры: тянешь — стрелка, нажал — новая связанная заметка.
-    private func linkHandle(_ node: Node, _ t: CanvasTransform) -> some View {
-        let edge = t.toScreen(CGPoint(x: node.x + node.size.width / 2, y: node.y))
+    private func linkHandle(_ node: Node, _ t: CanvasTransform, _ d: Drift) -> some View {
+        let edge = t.toScreen(CGPoint(x: node.x + node.size.width / 2, y: node.y) + d.offset(node))
         return Image(systemName: "plus")
             .font(.system(size: 12, weight: .bold))
             .foregroundStyle(.white)
@@ -367,8 +380,8 @@ struct CanvasView: View {
     }
 
     /// Точка посередине выбранной стрелки — тянешь, и стрелка изгибается.
-    private func bendHandle(_ c: Connection, _ a: Node, _ b: Node, _ t: CanvasTransform) -> some View {
-        let g = EdgeGeometry(from: a, to: b, connection: c, transform: t)
+    private func bendHandle(_ c: Connection, _ a: Node, _ b: Node, _ t: CanvasTransform, _ d: Drift) -> some View {
+        let g = EdgeGeometry(from: a, to: b, connection: c, transform: t, drift: d.offset)
         return Circle()
             .fill(Color.editor)
             .overlay(Circle().stroke(Color.accentColor, lineWidth: 2))
@@ -382,7 +395,7 @@ struct CanvasView: View {
                             bendOrigin = (c.bendX, c.bendY, c.styleRaw)
                             ws.context.undoManager?.disableUndoRegistration()
                         }
-                        let mid = EdgeGeometry.midpoint(t.toScreen(a.position), t.toScreen(b.position))
+                        let mid = EdgeGeometry.midpoint(t.toScreen(a.position + d.offset(a)), t.toScreen(b.position + d.offset(b)))
                         c.bendX = (v.location.x - mid.x) / t.scale
                         c.bendY = (v.location.y - mid.y) / t.scale
                         c.style = .curved
@@ -504,7 +517,7 @@ private struct ScrollWheelPan: ViewModifier {
     }
 
     private static func handle(_ event: NSEvent, ws: Workspace) -> NSEvent? {
-        guard ws.activeTab == nil,
+        guard ws.isOnCanvas,
               let window = event.window, window.styleMask.contains(.titled),
               let content = window.contentView else { return event }
         let p = CGPoint(x: event.locationInWindow.x, y: content.bounds.height - event.locationInWindow.y)

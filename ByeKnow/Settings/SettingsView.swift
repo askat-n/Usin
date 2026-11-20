@@ -45,6 +45,10 @@ struct SettingsView: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
+                        Toggle(tr("Плавающие заметки"), isOn: $settings.classicMotion)
+                        Text(tr("Заметки и стрелки плавно покачиваются на холсте.") + " " + tr("Без анимации холст не тратит батарею."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
 

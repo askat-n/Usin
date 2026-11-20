@@ -89,6 +89,11 @@ final class AppSettings {
         didSet { defaults.set(cosmosMotion, forKey: "settings.cosmosMotion") }
     }
 
+    /// «Классический»: заметки и стрелки плавно покачиваются на месте.
+    var classicMotion: Bool {
+        didSet { defaults.set(classicMotion, forKey: "settings.classicMotion") }
+    }
+
     /// В «Космосе» и «Терминале» оформление всегда тёмное.
     var effectiveColorScheme: ColorScheme? { canvasStyle.isDark ? .dark : appearance.colorScheme }
 
@@ -103,6 +108,7 @@ final class AppSettings {
         showGrid = defaults.object(forKey: "settings.showGrid") as? Bool ?? true
         canvasStyle = CanvasStyle(rawValue: defaults.string(forKey: "settings.canvasStyle") ?? "") ?? .cosmos
         cosmosMotion = defaults.object(forKey: "settings.cosmosMotion") as? Bool ?? true
+        classicMotion = defaults.object(forKey: "settings.classicMotion") as? Bool ?? true
     }
 }
 
@@ -278,4 +284,17 @@ private let englishStrings: [String: String] = [
     "Терминал": "Terminal",
     "Тёмные стили всегда в тёмном оформлении.": "Dark styles are always in dark appearance.",
     "Без анимации холст не тратит батарею.": "Without animation the canvas doesn't use battery.",
+    "Плавающие заметки": "Floating notes",
+    "Заметки и стрелки плавно покачиваются на холсте.": "Notes and arrows gently float on the canvas.",
+
+    // Файлы и боковая панель
+    "Файлы": "Files",
+    "Заметки": "Notes",
+    "Боковая панель": "Sidebar",
+    "Показать или скрыть боковую панель (⌃⌘S)": "Show or hide the sidebar (⌃⌘S)",
+    "Заметки как файлы": "Notes as files",
+    "Показать на холсте": "Show on canvas",
+    "Свернуть все": "Collapse all",
+    "Изменено": "Modified",
+    "заметок": "notes",
 ]
