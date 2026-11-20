@@ -41,7 +41,12 @@ final class NoteExporter {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.scheduleExport() }
         }
-        if isEnabled, folderURL != nil { start() } else if isEnabled { isEnabled = false }
+        if isEnabled, folderURL != nil {
+            start()
+        } else if isEnabled {
+            isEnabled = false
+            errorMessage = tr("Нет доступа к папке — выбери её снова")
+        }
     }
 
     // MARK: - Включение и папка
@@ -71,7 +76,7 @@ final class NoteExporter {
             let data = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
             UserDefaults.standard.set(data, forKey: Self.bookmarkKey)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = tr("Не удалось запомнить папку") + ": " + error.localizedDescription
             return false
         }
         folderURL?.stopAccessingSecurityScopedResource()

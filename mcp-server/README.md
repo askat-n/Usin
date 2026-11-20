@@ -44,7 +44,7 @@ swift build -c release
 }
 ```
 
-Пути — полные, без `~`. Перезапусти Claude Desktop.
+Пути — полные, без `~`. Перезапусти Claude Desktop. Запущенный Claude Desktop может перезаписать файл и выкинуть правку — если `byeknow` пропал из настроек, закрой Claude Desktop (⌘Q), поправь файл и открой снова.
 
 ### Claude Code
 
