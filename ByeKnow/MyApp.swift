@@ -8,6 +8,9 @@ import AppKit
     let container: ModelContainer
     @State private var workspace: Workspace
     @State private var sync: SyncEngine
+    #if os(macOS)
+    @State private var exporter: NoteExporter
+    #endif
 
     init() {
         let container: ModelContainer
@@ -19,6 +22,9 @@ import AppKit
         self.container = container
         _workspace = State(initialValue: Workspace(context: container.mainContext))
         _sync = State(initialValue: SyncEngine(context: container.mainContext))
+        #if os(macOS)
+        _exporter = State(initialValue: NoteExporter(context: container.mainContext))
+        #endif
     }
 
     var body: some Scene {
@@ -26,6 +32,9 @@ import AppKit
             ContentView()
                 .environment(workspace)
                 .environment(sync)
+                #if os(macOS)
+                .environment(exporter)
+                #endif
                 .environment(AppSettings.shared)
                 .preferredColorScheme(AppSettings.shared.effectiveColorScheme)
         }

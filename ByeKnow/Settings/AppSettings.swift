@@ -118,6 +118,18 @@ func tr(_ russian: String) -> String {
 }
 
 private let englishStrings: [String: String] = [
+    // Экспорт для ИИ
+    "ИИ-ассистенты": "AI assistants",
+    "Заметки в папке Markdown": "Notes in a Markdown folder",
+    "Папка": "Folder",
+    "Другая папка…": "Change folder…",
+    "Показать в Finder": "Show in Finder",
+    "Ошибка экспорта": "Export error",
+    "Обновлено": "Updated",
+    "Выбрать": "Choose",
+    "Папка для заметок в Markdown": "Folder for Markdown notes",
+    "ByeKnow держит в папке копию заметок: по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Её читают ИИ-ассистенты через MCP-сервер ByeKnow (или Obsidian). Файлы, положенные в подпапку inbox, становятся новыми заметками.": "ByeKnow keeps a copy of your notes in this folder: one .md file per note, subfolders for themes, arrows as [[links]]. AI assistants read it through the ByeKnow MCP server (or Obsidian). Files dropped into the inbox subfolder become new notes.",
+
     // Цвета
     "Обычный": "Default",
     "Красный": "Red",

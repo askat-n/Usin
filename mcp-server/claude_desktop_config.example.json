@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "byeknow": {
+      "command": "/Users/ИМЯ/Documents/ByeKnow/mcp-server/.build/release/byeknow-mcp",
+      "args": ["--folder", "/Users/ИМЯ/ByeKnow Notes"]
+    }
+  }
+}

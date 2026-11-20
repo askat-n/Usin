@@ -4,6 +4,9 @@ import SwiftData
 
 struct SettingsView: View {
     @Environment(SyncEngine.self) private var sync
+    #if os(macOS)
+    @Environment(NoteExporter.self) private var exporter
+    #endif
     @Environment(\.dismiss) private var dismiss
     @Environment(\.webAuthenticationSession) private var webAuth
     @Query(filter: #Predicate<Node> { $0.deletedAt != nil }) private var trashed: [Node]
@@ -19,6 +22,12 @@ struct SettingsView: View {
                 Section(tr("Синхронизация")) {
                     syncSection
                 }
+
+                #if os(macOS)
+                Section(tr("ИИ-ассистенты")) {
+                    exportSection
+                }
+                #endif
 
                 Section(tr("Язык")) {
                     Picker(tr("Язык"), selection: $settings.language) {
@@ -168,6 +177,42 @@ struct SettingsView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
     }
+
+    // MARK: - Экспорт для ИИ
+
+    #if os(macOS)
+    @ViewBuilder
+    private var exportSection: some View {
+        Toggle(isOn: Binding(get: { exporter.isEnabled }, set: { exporter.setEnabled($0) })) {
+            Label(tr("Заметки в папке Markdown"), systemImage: "folder.badge.gearshape")
+        }
+        if let folder = exporter.folderURL {
+            LabeledContent(tr("Папка")) {
+                Text(folder.path(percentEncoded: false).replacingOccurrences(of: NSHomeDirectory(), with: "~"))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
+            }
+            HStack {
+                Button(tr("Другая папка…")) { exporter.chooseFolder() }
+                Button(tr("Показать в Finder")) { exporter.revealInFinder() }
+            }
+        }
+        if let error = exporter.errorMessage {
+            Text(tr("Ошибка экспорта") + ": " + error)
+                .font(.caption)
+                .foregroundStyle(.red)
+        } else if exporter.isEnabled, let last = exporter.lastExport {
+            Text(tr("Обновлено") + ": " + last.formatted(date: .omitted, time: .standard))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        Text(tr("ByeKnow держит в папке копию заметок: по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Её читают ИИ-ассистенты через MCP-сервер ByeKnow (или Obsidian). Файлы, положенные в подпапку inbox, становятся новыми заметками."))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+    #endif
 
     private var statusText: String {
         switch sync.status {
