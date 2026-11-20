@@ -578,8 +578,10 @@ private struct ScrollWheelPan: ViewModifier {
     }
 
     private static func handle(_ event: NSEvent, ws: Workspace) -> NSEvent? {
-        guard ws.isOnCanvas,
+        // Настройки и другие листы — отдельные окна поверх холста: их прокрутку не трогаем.
+        guard ws.isOnCanvas, !ws.showSettings, !ws.showAllNotes,
               let window = event.window, window.styleMask.contains(.titled),
+              window.sheetParent == nil, window.attachedSheet == nil,
               let content = window.contentView else { return event }
         let p = CGPoint(x: event.locationInWindow.x, y: content.bounds.height - event.locationInWindow.y)
         // Верхняя полоса с фильтром остаётся прокручиваемой.
