@@ -3,33 +3,24 @@ import Foundation
 /// Одна заметка из папки, которую держит ByeKnow.
 struct Note {
     let path: String          // относительно папки, например «Работа/План.md»
-    let name: String          // имя файла без .md — то, что пишут в [[ссылках]]
-    let meta: [String: Any]
+    let name: String          // имя файла без .md — уникально, его пишут в [[ссылках]]
+    let title: String
+    let theme: String?
+    let created: String
+    let linksTo: [String]
+    let linkedFrom: [String]
+    /// Текст без шапки, без строки «# Название» и с картинками вместо длинных путей.
     let body: String
-    let raw: String
 
-    var id: String? { meta["id"] as? String }
-    var title: String { (meta["title"] as? String) ?? name }
-    var theme: String? {
-        if let t = meta["theme"] as? String, !t.isEmpty { return t }
-        let parts = path.split(separator: "/")
-        return parts.count > 1 ? String(parts[0]) : nil
+    /// Первая строка текста — короткое превью.
+    var preview: String {
+        let line = body.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty && !$0.hasPrefix("#") && $0 != "---" } ?? ""
+        return Tools.clip(line, 70)
     }
-    var color: String? { meta["color"] as? String }
-    var created: String? { meta["created"] as? String }
-    var linksTo: [String] { Vault.links(meta["links_to"]) }
-    var linkedFrom: [String] { Vault.links(meta["linked_from"]) }
 
-    var summary: [String: Any] {
-        var d: [String: Any] = ["title": title, "path": path]
-        if let theme { d["theme"] = theme }
-        if let color { d["color"] = color }
-        if let created { d["created"] = created }
-        if let id { d["id"] = id }
-        if !linksTo.isEmpty { d["links_to"] = linksTo }
-        if !linkedFrom.isEmpty { d["linked_from"] = linkedFrom }
-        return d
-    }
+    /// Ярлык темы для вывода.
+    var themeLabel: String { theme ?? "без темы" }
 }
 
 enum VaultError: Error, CustomStringConvertible {
@@ -37,13 +28,16 @@ enum VaultError: Error, CustomStringConvertible {
     var description: String { if case .message(let m) = self { return m }; return "" }
 }
 
-/// Папка с заметками ByeKnow в Markdown.
-struct Vault {
+/// Папка с заметками ByeKnow в Markdown. Разобранные файлы кэшируются по дате изменения.
+final class Vault {
     static let inbox = "inbox"
     static let attachments = "attachments"
     static let colors = ["default", "red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"]
 
     let root: URL
+    private var cache: [String: (date: Date, note: Note)] = [:]
+
+    init(root: URL) { self.root = root }
 
     func notes() throws -> [Note] {
         let fm = FileManager.default
@@ -51,8 +45,9 @@ struct Vault {
         guard fm.fileExists(atPath: root.path, isDirectory: &isDir), isDir.boolValue else {
             throw VaultError.message("Папка с заметками не найдена: \(root.path). Включи «Заметки в папке Markdown» в Настройках ByeKnow и укажи ту же папку в конфиге MCP.")
         }
-        guard let e = fm.enumerator(at: root, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else { return [] }
+        guard let e = fm.enumerator(at: root, includingPropertiesForKeys: [.contentModificationDateKey], options: [.skipsHiddenFiles]) else { return [] }
         var result: [Note] = []
+        var seen: Set<String> = []
         let rootPath = root.standardizedFileURL.path
         for case let url as URL in e {
             let full = url.standardizedFileURL.path
@@ -63,31 +58,38 @@ struct Vault {
                 e.skipDescendants()
                 continue
             }
-            guard url.pathExtension.lowercased() == "md",
-                  let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            let (meta, body) = Self.parseFrontMatter(text)
-            result.append(Note(path: rel, name: url.deletingPathExtension().lastPathComponent, meta: meta, body: body, raw: text))
+            guard url.pathExtension.lowercased() == "md" else { continue }
+            let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+            seen.insert(rel)
+            if let hit = cache[rel], hit.date == date {
+                result.append(hit.note)
+                continue
+            }
+            guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            let note = Self.parse(text, path: rel, name: url.deletingPathExtension().lastPathComponent)
+            cache[rel] = (date, note)
+            result.append(note)
         }
-        return result.sorted { ($0.created ?? "", $0.path) > ($1.created ?? "", $1.path) }
+        cache = cache.filter { seen.contains($0.key) }
+        return result.sorted { ($0.created, $0.path) > ($1.created, $1.path) }
     }
 
-    /// Заметка по пути, id, имени файла, названию или `[[ссылке]]`.
-    func find(_ ref: String) throws -> Note {
-        let all = try notes()
+    /// Заметка по имени, пути, названию, `[[ссылке]]` или id.
+    func find(_ ref: String, in all: [Note]? = nil) throws -> Note {
+        let all = try all ?? notes()
         var key = ref.trimmingCharacters(in: .whitespacesAndNewlines)
         if key.hasPrefix("[["), key.hasSuffix("]]") { key = String(key.dropFirst(2).dropLast(2)) }
         let lower = key.lowercased()
         let withMd = lower.hasSuffix(".md") ? lower : lower + ".md"
-        if let n = all.first(where: { $0.path.lowercased() == withMd }) { return n }
-        if let n = all.first(where: { $0.id?.lowercased() == lower }) { return n }
         if let n = all.first(where: { $0.name.lowercased() == lower }) { return n }
+        if let n = all.first(where: { $0.path.lowercased() == withMd }) { return n }
         if let n = all.first(where: { $0.title.lowercased() == lower }) { return n }
-        let partial = all.filter { $0.title.lowercased().contains(lower) }
+        let partial = all.filter { $0.name.lowercased().contains(lower) || $0.title.lowercased().contains(lower) }
         if partial.count == 1 { return partial[0] }
         if partial.count > 1 {
-            throw VaultError.message("Под «\(key)» подходит несколько заметок: " + partial.prefix(10).map { "\($0.title) (\($0.path))" }.joined(separator: "; ") + ". Уточни путь.")
+            throw VaultError.message("Подходят несколько: " + partial.prefix(10).map(\.name).joined(separator: "; ") + ". Укажи точное имя.")
         }
-        throw VaultError.message("Заметка «\(key)» не найдена. Используй search_notes или list_notes.")
+        throw VaultError.message("Заметка «\(key)» не найдена. Попробуй search_notes.")
     }
 
     /// Новая заметка — файл во `inbox/`; ByeKnow (если открыт) сам превратит его в заметку.
@@ -116,12 +118,47 @@ struct Vault {
         // Сначала скрытый файл, потом переименование — чтобы ByeKnow не прочитал его наполовину.
         let tmp = inbox.appendingPathComponent("." + name + ".tmp")
         try Data(text.utf8).write(to: tmp)
-        let dest = inbox.appendingPathComponent(name)
-        try fm.moveItem(at: tmp, to: dest)
+        try fm.moveItem(at: tmp, to: inbox.appendingPathComponent(name))
         return "\(Self.inbox)/\(name)"
     }
 
     // MARK: - Разбор
+
+    static func parse(_ text: String, path: String, name: String) -> Note {
+        let (meta, rawBody) = parseFrontMatter(text)
+        let title = (meta["title"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? name
+        var theme = meta["theme"] as? String
+        if theme?.isEmpty ?? true {
+            let parts = path.split(separator: "/")
+            theme = parts.count > 1 ? String(parts[0]) : nil
+        }
+        return Note(
+            path: path,
+            name: name,
+            title: title,
+            theme: theme,
+            created: meta["created"] as? String ?? "",
+            linksTo: links(meta["links_to"]),
+            linkedFrom: links(meta["linked_from"]),
+            body: cleanBody(rawBody, title: title)
+        )
+    }
+
+    /// Убирает то, что не несёт смысла для ИИ: повтор названия, длинные пути картинок, лишние пустые строки.
+    static func cleanBody(_ body: String, title: String) -> String {
+        var lines = body.components(separatedBy: "\n")
+        if let first = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
+           lines[first].hasPrefix("# ") {
+            lines.remove(at: first)
+        }
+        var out: [String] = []
+        for line in lines {
+            let t = line.replacingOccurrences(of: #"!\[[^\]]*\]\([^)]*\)"#, with: "[картинка]", options: .regularExpression)
+            if t.trimmingCharacters(in: .whitespaces).isEmpty, out.last?.isEmpty ?? true { continue }
+            out.append(t.trimmingCharacters(in: .whitespaces).isEmpty ? "" : t)
+        }
+        return out.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 
     static func parseFrontMatter(_ text: String) -> ([String: Any], String) {
         let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")

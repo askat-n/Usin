@@ -54,13 +54,25 @@ claude mcp add byeknow --scope user -- "$PWD/.build/release/byeknow-mcp" --folde
 
 ## Инструменты
 
-| Инструмент | Что делает |
+Сервер устроен так, чтобы ИИ тратил как можно меньше токенов и не читал всё подряд. Ответы — короткий текст, а не JSON. Заметку везде называют по имени файла: оно короткое и уникальное. Служебные поля (id, цвет, форма, дата) ИИ не получает.
+
+Порядок работы (он же записан в подсказке сервера для ИИ):
+
+1. **`overview`** — карта: темы с числом заметок, главные узлы (заметки с 2+ стрелками), новые. Пара строк.
+2. **`search_notes`** или **`list_notes`** по теме — найти нужное.
+3. **`related_notes`** — пройти по стрелкам к соседям, не открывая их.
+4. **`read_note`** — прочитать только нужное. Длинные заметки — по частям: сначала `outline`, потом `section`.
+
+| Инструмент | Что отдаёт |
 | --- | --- |
-| `list_themes` | Темы и сколько в каждой заметок |
-| `list_notes` | Список заметок (новые сверху), фильтр по теме |
-| `search_notes` | Поиск по названию и тексту, с отрывками |
-| `read_note` | Полный текст заметки по пути, названию, `[[ссылке]]` или id |
+| `overview` | Темы, узлы, новые заметки |
+| `list_notes` | Только имена, сгруппированные по темам; `detail` — с превью в одну строку; `offset`/`limit` — постранично |
+| `search_notes` | Имена и короткие отрывки вокруг найденного (по умолчанию 8); если все слова сразу не встречаются — частичные совпадения |
+| `related_notes` | → куда ведут стрелки, ← откуда приходят, та же тема — с превью |
+| `read_note` | Текст без шапки файла; картинки — `[картинка]`; `outline` — оглавление с размерами, `section` — один раздел, `max_chars` — предел (3000) |
 | `create_note` | Новая заметка: название, текст в Markdown, тема, цвет, стрелки к другим заметкам |
+
+Пример: `list_notes` на 15 заметок — 205 символов (было 3453, примерно в 17 раз меньше); на 100 заметок — около 1 500 символов вместо ~25 000.
 
 ## Формат файла
 
@@ -99,5 +111,5 @@ npx @modelcontextprotocol/inspector .build/release/byeknow-mcp --folder "$HOME/B
 Или без Node — одной командой:
 
 ```bash
-printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_themes","arguments":{}}}' | .build/release/byeknow-mcp --folder "$HOME/ByeKnow Notes"
+printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"overview","arguments":{}}}' | .build/release/byeknow-mcp --folder "$HOME/ByeKnow Notes"
 ```

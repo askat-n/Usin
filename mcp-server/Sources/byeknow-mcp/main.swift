@@ -3,7 +3,7 @@ import Foundation
 // MCP-сервер ByeKnow: JSON-RPC 2.0 через stdin/stdout, по сообщению на строку.
 // Папка с заметками: аргумент `--folder <путь>` или переменная BYEKNOW_NOTES_DIR.
 
-let version = "1.0.0"
+let version = "1.1.0"
 let supportedProtocols = ["2025-06-18", "2025-03-26", "2024-11-05"]
 
 func log(_ s: String) {
@@ -39,7 +39,7 @@ func fail(_ id: Any, code: Int, _ message: String) {
     send(["jsonrpc": "2.0", "id": id, "error": ["code": code, "message": message]])
 }
 
-func handle(_ msg: [String: Any]) {
+@MainActor func handle(_ msg: [String: Any]) {
     let method = msg["method"] as? String ?? ""
     let params = msg["params"] as? [String: Any] ?? [:]
     // Уведомления (без id) ответа не ждут.
@@ -52,7 +52,7 @@ func handle(_ msg: [String: Any]) {
             "protocolVersion": supportedProtocols.contains(asked) ? asked : supportedProtocols[0],
             "capabilities": ["tools": ["listChanged": false]],
             "serverInfo": ["name": "byeknow", "title": "ByeKnow", "version": version],
-            "instructions": "Заметки из приложения ByeKnow (холст заметок). Темы — папки, связи-стрелки между заметками — [[ссылки]] в шапке (links_to / linked_from). Ищи через search_notes, читай через read_note; новые заметки — create_note.",
+            "instructions": "Заметки из ByeKnow. Экономь токены: не читай всё подряд. Порядок: overview (карта) → search_notes или list_notes(theme) → related_notes (соседи по стрелкам) → read_note только нужных; длинные — outline, потом section. Заметку называй по имени из списков.",
         ])
     case "ping":
         reply(id, result: [String: Any]())
