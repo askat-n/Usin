@@ -11,6 +11,7 @@ import SwiftData
 final class NoteExporter {
     static let inboxName = "inbox"
     static let attachmentsName = "attachments"
+    static let historyName = ".history"
     private static let manifestName = ".byeknow-export.json"
     private static let bookmarkKey = "export.bookmark"
     private static let enabledKey = "export.enabled"
@@ -31,6 +32,8 @@ final class NoteExporter {
     private var written: [String: String] = [:]
     /// Имя файла (без .md, в нижнем регистре) → заметка. Для `[[ссылок]]` из входящих.
     private var fileNames: [String: UUID] = [:]
+    /// Заметка → путь её файла в папке. Для копий в `.history` перед изменением.
+    private var filePaths: [UUID: String] = [:]
 
     init(context: ModelContext) {
         self.context = context
@@ -179,10 +182,12 @@ final class NoteExporter {
         }
 
         var files: [String: String] = [:]
+        filePaths = [:]
         var attachments: [String: NoteBlock] = [:]
         for node in nodes {
             let folder = node.theme.flatMap { folders[$0.id] }
             let path = (folder.map { $0 + "/" } ?? "") + names[node.id]! + ".md"
+            filePaths[node.id] = path
             files[path] = render(
                 node,
                 folderName: folder.map { _ in node.theme?.name ?? "" },
@@ -307,7 +312,7 @@ final class NoteExporter {
         var done: [URL] = []
         for file in files {
             guard let text = try? String(contentsOf: file, encoding: .utf8) else { continue }
-            createNote(from: text, fallbackTitle: file.deletingPathExtension().lastPathComponent)
+            applyInboxFile(text, fallbackTitle: file.deletingPathExtension().lastPathComponent)
             done.append(file)
         }
         do {
@@ -319,10 +324,15 @@ final class NoteExporter {
         }
     }
 
-    private func createNote(from text: String, fallbackTitle: String) {
+    /// Файл из inbox. Заметка с таким названием уже есть — дополняем её, нет — создаём.
+    ///
+    /// Шапка: `title` (или `note`) — название; `mode` — `append` (дописать в конец, по умолчанию),
+    /// `section` (заменить раздел `section`, нет такого — добавить), `replace` (заменить весь текст),
+    /// `new` (всегда новая заметка); `theme`, `color`, `links_to` — как при создании.
+    private func applyInboxFile(_ text: String, fallbackTitle: String) {
         let (meta, bodyLines) = Self.parseFrontMatter(text)
         var lines = bodyLines
-        var title = (meta["title"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var title = ((meta["note"] ?? meta["title"]) as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if let first = lines.firstIndex(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty }),
            lines[first].hasPrefix("# ") {
             let heading = String(lines[first].dropFirst(2)).trimmingCharacters(in: .whitespaces)
@@ -333,18 +343,34 @@ final class NoteExporter {
         }
         if title.isEmpty { title = fallbackTitle }
 
+        let section = (meta["section"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).nonEmpty
+        let mode = (meta["mode"] as? String)?.lowercased().trimmingCharacters(in: .whitespaces).nonEmpty
+            ?? (section == nil ? "append" : "section")
         let all = (try? context.fetch(FetchDescriptor<Node>())) ?? []
-        let rootNode = all.first { $0.isRoot }
-        let angle = Double.random(in: 0..<(2 * .pi))
-        let radius = Double.random(in: 260...420)
-        let center = rootNode?.position ?? .zero
-        let node = Node(position: CGPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius))
-        node.title = title
-        node.shape = AppSettings.shared.defaultShape
-        if node.shape == .sticker { node.fillIndex = 3 }
-        if let color = meta["color"] as? String, let index = Self.colorIndex(color) { node.fillIndex = index }
-        context.insert(node)
+        let alive = all.filter { $0.deletedAt == nil && !$0.isRoot }
+        let items = Self.blocks(from: lines)
 
+        let node: Node
+        if mode != "new", let existing = findNode(title, in: alive) {
+            node = existing
+            backup(node)
+            update(node, with: items, mode: mode, section: section)
+        } else {
+            let rootNode = all.first { $0.isRoot }
+            let angle = Double.random(in: 0..<(2 * .pi))
+            let radius = Double.random(in: 260...420)
+            let center = rootNode?.position ?? .zero
+            node = Node(position: CGPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius))
+            node.title = title
+            node.shape = AppSettings.shared.defaultShape
+            if node.shape == .sticker { node.fillIndex = 3 }
+            context.insert(node)
+            if let section { node.addBlock(.heading, context: context).text = section }
+            append(items, to: node)
+            if node.blocks.isEmpty { node.addBlock(.text, context: context) }
+        }
+
+        if let color = meta["color"] as? String, let index = Self.colorIndex(color) { node.fillIndex = index }
         if let themeName = (meta["theme"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !themeName.isEmpty {
             let themes = (try? context.fetch(FetchDescriptor<Theme>())) ?? []
             if let theme = themes.first(where: { $0.name.compare(themeName, options: .caseInsensitive) == .orderedSame }) {
@@ -356,24 +382,86 @@ final class NoteExporter {
             }
         }
 
-        for (kind, text, checked) in Self.blocks(from: lines) {
+        // Стрелки к другим заметкам — по названию или имени файла; уже проведённые не дублируем.
+        let connections = (try? context.fetch(FetchDescriptor<Connection>())) ?? []
+        var linked = Set(connections.flatMap { c -> [UUID] in
+            c.fromID == node.id ? [c.toID] : c.toID == node.id ? [c.fromID] : []
+        })
+        for target in Self.stringList(meta["links_to"]) {
+            guard let other = findNode(target, in: alive), other.id != node.id, !linked.contains(other.id) else { continue }
+            linked.insert(other.id)
+            context.insert(Connection(from: node.id, to: other.id))
+        }
+    }
+
+    /// Заметка по id, имени файла в папке или названию (без учёта регистра).
+    private func findNode(_ ref: String, in nodes: [Node]) -> Node? {
+        let key = ref.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !key.isEmpty else { return nil }
+        if let id = UUID(uuidString: key), let n = nodes.first(where: { $0.id == id }) { return n }
+        if let id = fileNames[key], let n = nodes.first(where: { $0.id == id }) { return n }
+        return nodes.first { $0.displayTitle.lowercased() == key }
+    }
+
+    private func update(_ node: Node, with items: [(BlockKind, String, Bool)], mode: String, section: String?) {
+        switch mode {
+        case "replace":
+            for b in node.sortedBlocks { node.remove(b, context: context) }
+            append(items, to: node)
+            if node.blocks.isEmpty { node.addBlock(.text, context: context) }
+        case "section" where section != nil:
+            let key = section!.lowercased()
+            var items = items
+            if let first = items.first, first.0 == .heading, first.1.lowercased() == key { items.removeFirst() }
+            let list = node.sortedBlocks
+            if let h = list.firstIndex(where: { $0.kind == .heading && $0.text.trimmingCharacters(in: .whitespaces).lowercased() == key }) {
+                let end = list[(h + 1)...].firstIndex { $0.kind == .heading } ?? list.count
+                for b in list[(h + 1)..<end] { node.remove(b, context: context) }
+                var after = list[h]
+                for (kind, text, checked) in items {
+                    after = node.addBlock(kind, after: after, context: context)
+                    after.text = text
+                    after.isChecked = checked
+                }
+            } else {
+                dropPlaceholder(node)
+                node.addBlock(.heading, context: context).text = section!
+                append(items, to: node)
+            }
+        default:
+            dropPlaceholder(node)
+            append(items, to: node)
+        }
+    }
+
+    private func append(_ items: [(BlockKind, String, Bool)], to node: Node) {
+        for (kind, text, checked) in items {
             let block = node.addBlock(kind, context: context)
             block.text = text
             block.isChecked = checked
         }
-        if node.blocks.isEmpty { node.addBlock(.text, context: context) }
+    }
 
-        // Стрелки к уже существующим заметкам — по названию или по имени файла.
-        let alive = all.filter { $0.deletedAt == nil && $0.id != node.id }
-        var linked: Set<UUID> = []
-        for target in Self.stringList(meta["links_to"]) {
-            let key = target.lowercased()
-            let id = fileNames[key]
-                ?? alive.first { $0.displayTitle.lowercased() == key }?.id
-            guard let id, id != node.id, !linked.contains(id) else { continue }
-            linked.insert(id)
-            context.insert(Connection(from: node.id, to: id))
+    /// Единственная пустая строка новой заметки мешает дописывать — убираем её.
+    private func dropPlaceholder(_ node: Node) {
+        let list = node.sortedBlocks
+        if list.count == 1, list[0].kind == .text, list[0].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            node.remove(list[0], context: context)
         }
+    }
+
+    /// Копия файла заметки до изменения — в скрытой папке `.history`.
+    private func backup(_ node: Node) {
+        guard let root = folderURL, let path = filePaths[node.id] else { return }
+        let fm = FileManager.default
+        let source = root.appending(path: path)
+        guard fm.fileExists(atPath: source.path(percentEncoded: false)) else { return }
+        let dir = root.appending(path: Self.historyName, directoryHint: .isDirectory)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let stamp = Date().formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
+            .replacingOccurrences(of: ":", with: "")
+        let name = source.deletingPathExtension().lastPathComponent + " " + stamp + ".md"
+        try? fm.copyItem(at: source, to: dir.appending(path: name))
     }
 
     private static func blocks(from lines: [String]) -> [(BlockKind, String, Bool)] {
@@ -503,5 +591,9 @@ final class NoteExporter {
         used.insert(name.lowercased())
         return name
     }
+}
+
+private extension String {
+    var nonEmpty: String? { isEmpty ? nil : self }
 }
 #endif

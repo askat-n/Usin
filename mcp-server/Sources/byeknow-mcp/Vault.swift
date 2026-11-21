@@ -92,24 +92,34 @@ final class Vault {
         throw VaultError.message("Заметка «\(key)» не найдена. Попробуй search_notes.")
     }
 
-    /// Новая заметка — файл во `inbox/`; ByeKnow (если открыт) сам превратит его в заметку.
-    func createNote(title: String, body: String, theme: String?, color: String?, linksTo: [String]) throws -> String {
+    /// Записать заметку: файл во `inbox/`, ByeKnow (если открыт) сам применит его.
+    /// Заметка с таким названием есть — дополнится (`append`/`section`/`replace`), нет — создастся.
+    func writeNote(title: String, body: String, mode: String?, section: String?, theme: String?, color: String?, linksTo: [String]) throws -> String {
         let fm = FileManager.default
         guard fm.fileExists(atPath: root.path) else {
             throw VaultError.message("Папка с заметками не найдена: \(root.path)")
         }
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanTitle.isEmpty else { throw VaultError.message("Нужно название заметки (title).") }
+        guard !cleanTitle.isEmpty else { throw VaultError.message("Нужно название заметки (note).") }
         if let color, !Self.colors.contains(color.lowercased()) {
             throw VaultError.message("Неизвестный цвет «\(color)». Можно: " + Self.colors.joined(separator: ", "))
         }
-        var head = ["---", "title: \(Self.quote(cleanTitle))"]
-        if let theme, !theme.trimmingCharacters(in: .whitespaces).isEmpty { head.append("theme: \(Self.quote(theme))") }
+        let section = section?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+        let mode = mode?.lowercased().nilIfEmpty ?? (section == nil ? "append" : "section")
+        guard ["append", "section", "replace"].contains(mode) else {
+            throw VaultError.message("mode: append, section или replace.")
+        }
+        if mode == "section", section == nil { throw VaultError.message("Для mode=section нужен section.") }
+
+        var head = ["---", "title: \(Self.quote(cleanTitle))", "mode: \(mode)"]
+        if let section { head.append("section: \(Self.quote(section))") }
+        if let theme = theme?.trimmingCharacters(in: .whitespaces).nilIfEmpty { head.append("theme: \(Self.quote(theme))") }
         if let color { head.append("color: \(color.lowercased())") }
         if !linksTo.isEmpty { head.append("links_to: [\(linksTo.map { Self.quote($0) }.joined(separator: ", "))]") }
         head.append("---")
         let text = head.joined(separator: "\n") + "\n\n" + body.trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
 
+        let exists = (try? find(cleanTitle)).map { $0.name.lowercased() == cleanTitle.lowercased() || $0.title.lowercased() == cleanTitle.lowercased() } ?? false
         let inbox = root.appendingPathComponent(Self.inbox, isDirectory: true)
         try fm.createDirectory(at: inbox, withIntermediateDirectories: true)
         let stamp = ISO8601DateFormatter.string(from: Date(), timeZone: .current, formatOptions: [.withYear, .withMonth, .withDay, .withTime])
@@ -119,7 +129,10 @@ final class Vault {
         let tmp = inbox.appendingPathComponent("." + name + ".tmp")
         try Data(text.utf8).write(to: tmp)
         try fm.moveItem(at: tmp, to: inbox.appendingPathComponent(name))
-        return "\(Self.inbox)/\(name)"
+        let what = exists ? (mode == "section" ? "раздел «\(section!)» заметки «\(cleanTitle)» будет заменён" :
+                             mode == "replace" ? "заметка «\(cleanTitle)» будет заменена" : "дописано в «\(cleanTitle)»")
+                          : "будет создана заметка «\(cleanTitle)»"
+        return "Принято: \(what). ByeKnow применит через пару секунд, если открыт; прежняя версия сохраняется."
     }
 
     // MARK: - Разбор
@@ -216,4 +229,8 @@ final class Vault {
         let data = (try? JSONSerialization.data(withJSONObject: s, options: [.fragmentsAllowed, .withoutEscapingSlashes])) ?? Data()
         return String(decoding: data, as: UTF8.self)
     }
+}
+
+extension String {
+    var nilIfEmpty: String? { isEmpty ? nil : self }
 }

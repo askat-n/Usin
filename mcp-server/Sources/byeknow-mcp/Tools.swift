@@ -69,18 +69,20 @@ struct Tools {
             "annotations": ["readOnlyHint": true],
         ],
         [
-            "name": "create_note",
-            "description": "Новая заметка в ByeKnow (появится на холсте, когда приложение открыто). Существующие не меняет. В body каждая строка — блок: «## » заголовок, «- [ ] » чек-лист, «---», строка-ссылка.",
+            "name": "write_note",
+            "description": "Записать в ByeKnow. Есть заметка с таким названием — дополнит её, нет — создаст. mode: append — дописать в конец (по умолчанию); section — заменить раздел section целиком (сначала прочитай его и сохрани нужное); replace — заменить всё (только по просьбе). В body строка = блок: «## » заголовок, «- » пункт, «- [ ] » задача.",
             "inputSchema": [
                 "type": "object",
                 "properties": [
-                    "title": ["type": "string"],
+                    "note": ["type": "string", "description": "Точное название"],
                     "body": ["type": "string"],
-                    "theme": ["type": "string", "description": "Нет такой — будет создана"],
+                    "mode": ["type": "string", "enum": ["append", "section", "replace"]],
+                    "section": ["type": "string", "description": "Заголовок раздела"],
+                    "theme": ["type": "string"],
                     "color": ["type": "string", "enum": Vault.colors],
-                    "links_to": ["type": "array", "items": ["type": "string"], "description": "Имена заметок для стрелок"],
+                    "links_to": ["type": "array", "items": ["type": "string"], "description": "Стрелки к заметкам"],
                 ],
-                "required": ["title"],
+                "required": ["note", "body"],
             ],
             "annotations": ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": false],
         ],
@@ -109,15 +111,16 @@ struct Tools {
             guard let ref = args["note"] as? String else { throw VaultError.message("Нужен note.") }
             return try read(ref, outline: args["outline"] as? Bool ?? false,
                             section: args["section"] as? String, maxChars: Self.int(args["max_chars"]) ?? 3000)
-        case "create_note":
-            let path = try vault.createNote(
-                title: args["title"] as? String ?? "",
+        case "write_note", "create_note":
+            return try vault.writeNote(
+                title: (args["note"] ?? args["title"]) as? String ?? "",
                 body: args["body"] as? String ?? "",
+                mode: args["mode"] as? String,
+                section: args["section"] as? String,
                 theme: args["theme"] as? String,
                 color: args["color"] as? String,
                 linksTo: (args["links_to"] as? [Any])?.compactMap { $0 as? String } ?? []
             )
-            return "Передано в ByeKnow (\(path)). Появится на холсте, когда приложение открыто."
         default:
             throw VaultError.message("Неизвестный инструмент: \(name)")
         }

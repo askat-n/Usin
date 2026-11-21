@@ -3,7 +3,7 @@ import Foundation
 // MCP-сервер ByeKnow: JSON-RPC 2.0 через stdin/stdout, по сообщению на строку.
 // Папка с заметками: аргумент `--folder <путь>` или переменная BYEKNOW_NOTES_DIR.
 
-let version = "1.1.0"
+let version = "1.2.0"
 let supportedProtocols = ["2025-06-18", "2025-03-26", "2024-11-05"]
 
 func log(_ s: String) {
@@ -52,7 +52,7 @@ func fail(_ id: Any, code: Int, _ message: String) {
             "protocolVersion": supportedProtocols.contains(asked) ? asked : supportedProtocols[0],
             "capabilities": ["tools": ["listChanged": false]],
             "serverInfo": ["name": "byeknow", "title": "ByeKnow", "version": version],
-            "instructions": "Заметки из ByeKnow. Экономь токены: не читай всё подряд. Порядок: overview (карта) → search_notes или list_notes(theme) → related_notes (соседи по стрелкам) → read_note только нужных; длинные — outline, потом section. Заметку называй по имени из списков.",
+            "instructions": "Заметки ByeKnow — общая память о пользователе для всех ИИ. Экономь токены: overview → search_notes/list_notes(theme) → related_notes → read_note только нужного (длинное — outline, потом section). Память о пользователе — тема «Память»; правила записи и названия заметок — в заметке «Инструкция для ИИ» (прочитай её один раз, прежде чем писать). Узнал о пользователе или его проектах что-то новое и важное — запиши через write_note по этим правилам, в существующую заметку, не создавая копий.",
         ])
     case "ping":
         reply(id, result: [String: Any]())
