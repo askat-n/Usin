@@ -14,7 +14,7 @@ cd "$ROOT"
 REPO="askat-n/Usin"
 
 VERSION="$(xcodebuild -project Usin.xcodeproj -target Usin -configuration Release -showBuildSettings 2>/dev/null \
-    | awk '$1 == "MARKETING_VERSION" {print $3; exit}')"
+    | awk '$1 == "MARKETING_VERSION" {v = $3} END {print v}')"  # без раннего exit: иначе pipefail обрывает скрипт
 [[ -n "$VERSION" ]] || { echo "Не удалось узнать версию (MARKETING_VERSION)"; exit 1; }
 TAG="v$VERSION"
 NOTES="${1:-Usin $VERSION}"
