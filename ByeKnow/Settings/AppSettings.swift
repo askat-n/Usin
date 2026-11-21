@@ -119,6 +119,15 @@ func tr(_ russian: String) -> String {
 
 private let englishStrings: [String: String] = [
     // Экспорт для ИИ
+    "Для ИИ": "For AI",
+    "ИИ-ассистенты видят эту заметку. Нажми, чтобы сделать её личной": "AI assistants can see this note. Click to make it private",
+    "Личная заметка. Нажми, чтобы открыть её ИИ-ассистентам": "Private note. Click to share it with AI assistants",
+    "Скрыть от ИИ": "Hide from AI",
+    "Открыть для ИИ": "Share with AI",
+    "Видна ИИ — нажми, чтобы скрыть": "Visible to AI — click to hide",
+    "Видна ИИ": "Visible to AI",
+    "Память ИИ": "AI memory",
+    "Здесь то, что видят ИИ-ассистенты. Отметь заметку «Для ИИ» — она появится здесь.": "This is what AI assistants can see. Mark a note “For AI” and it shows up here.",
     "ИИ-ассистенты": "AI assistants",
     "Заметки в папке Markdown": "Notes in a Markdown folder",
     "Папка": "Folder",
@@ -130,7 +139,7 @@ private let englishStrings: [String: String] = [
     "Нет доступа к папке — выбери её снова": "No access to the folder — choose it again",
     "Не удалось запомнить папку": "Couldn't remember the folder",
     "Папка для заметок в Markdown": "Folder for Markdown notes",
-    "ByeKnow держит в папке копию заметок: по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Её читают ИИ-ассистенты через MCP-сервер ByeKnow (или Obsidian). Файлы, положенные в подпапку inbox, становятся новыми заметками.": "ByeKnow keeps a copy of your notes in this folder: one .md file per note, subfolders for themes, arrows as [[links]]. AI assistants read it through the ByeKnow MCP server (or Obsidian). Files dropped into the inbox subfolder become new notes.",
+    "В папке — копия заметок с отметкой «Для ИИ» (✦): по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Остальные заметки остаются личными и в папку не попадают. Её читают ИИ-ассистенты через MCP-сервер ByeKnow. Записи ИИ из подпапки inbox ByeKnow применяет сам.": "The folder holds a copy of notes marked “For AI” (✦): one .md file per note, subfolders for themes, arrows as [[links]]. All other notes stay private and never reach the folder. AI assistants read it through the ByeKnow MCP server. ByeKnow applies AI writes from the inbox subfolder itself.",
 
     // Цвета
     "Обычный": "Default",

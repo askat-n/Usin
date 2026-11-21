@@ -33,6 +33,20 @@ struct NodeView: View, Equatable {
             .frame(width: size.width, height: size.height)
             .background { background(size) }
             .overlay { ring }
+            .overlay(alignment: .topTrailing) { aiMark }
+    }
+
+    /// Значок ✦ у заметки, которую видят ИИ-ассистенты.
+    @ViewBuilder
+    private var aiMark: some View {
+        if node.isForAI && !node.isRoot {
+            Image(systemName: AIAccess.symbol)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(terminal ? Term.ink(7) : AIAccess.color)
+                .padding(node.shape == .circle ? 22 : 8)
+                .allowsHitTesting(false)
+                .help(tr("Видна ИИ"))
+        }
     }
 
     // MARK: Content

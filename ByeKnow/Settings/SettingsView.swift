@@ -207,7 +207,7 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        Text(tr("ByeKnow держит в папке копию заметок: по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Её читают ИИ-ассистенты через MCP-сервер ByeKnow (или Obsidian). Файлы, положенные в подпапку inbox, становятся новыми заметками."))
+        Text(tr("В папке — копия заметок с отметкой «Для ИИ» (✦): по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Остальные заметки остаются личными и в папку не попадают. Её читают ИИ-ассистенты через MCP-сервер ByeKnow. Записи ИИ из подпапки inbox ByeKnow применяет сам."))
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)

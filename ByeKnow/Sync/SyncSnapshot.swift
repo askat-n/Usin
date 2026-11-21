@@ -28,6 +28,8 @@ struct NodeRecord: SyncRecord {
     var themeID: UUID?
     /// В корзине с этого момента.
     var deletedAt: Date?
+    /// Видна ИИ. nil — нет (так старые записи и записи старых версий приложения совпадают с новыми).
+    var forAI: Bool?
 }
 
 struct BlockRecord: SyncRecord {
@@ -88,7 +90,8 @@ extension SyncSnapshot {
         snapshot.nodes = nodes.map {
             NodeRecord(id: $0.id, title: $0.title, x: $0.x, y: $0.y, shapeRaw: $0.shapeRaw,
                        fillIndex: $0.fillIndex, inkIndex: $0.inkIndex, isRoot: $0.isRoot,
-                       createdAt: $0.createdAt, themeID: $0.theme?.id, deletedAt: $0.deletedAt)
+                       createdAt: $0.createdAt, themeID: $0.theme?.id, deletedAt: $0.deletedAt,
+                       forAI: $0.isForAI ? true : nil)
         }
         snapshot.blocks = blocks.map {
             BlockRecord(id: $0.id, nodeID: $0.node?.id, order: $0.order, kindRaw: $0.kindRaw,
@@ -178,6 +181,7 @@ extension SyncSnapshot {
             set(&node.isRoot, rec.isRoot)
             set(&node.createdAt, rec.createdAt)
             set(&node.deletedAt, rec.deletedAt)
+            set(&node.isForAI, rec.forAI ?? false)
             let theme = rec.themeID.flatMap { themeByID[$0] }
             if node.theme?.id != theme?.id { node.theme = theme }
         }

@@ -87,6 +87,7 @@ struct NoteEditorView: View {
     private var header: some View {
         HStack(spacing: 8) {
             ThemeMenu(theme: $node.theme, style: .chip)
+            AIAccessChip(node: node)
             Spacer()
             Button {
                 ws.showOnCanvas(node)
@@ -97,6 +98,8 @@ struct NoteEditorView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             Menu {
+                AIAccessMenuItem(node: node)
+                Divider()
                 Button(tr("Удалить заметку"), systemImage: "trash", role: .destructive) { ws.delete(node) }
             } label: {
                 Image(systemName: "ellipsis")

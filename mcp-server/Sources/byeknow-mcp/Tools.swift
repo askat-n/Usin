@@ -78,7 +78,7 @@ struct Tools {
                     "body": ["type": "string"],
                     "mode": ["type": "string", "enum": ["append", "section", "replace"]],
                     "section": ["type": "string", "description": "Заголовок раздела"],
-                    "theme": ["type": "string"],
+                    "theme": ["type": "string", "description": "Тема новой заметки (обычно не нужна)"],
                     "color": ["type": "string", "enum": Vault.colors],
                     "links_to": ["type": "array", "items": ["type": "string"], "description": "Стрелки к заметкам"],
                 ],

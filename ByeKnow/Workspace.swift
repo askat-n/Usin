@@ -61,6 +61,7 @@ final class Workspace {
     init(context: ModelContext) {
         self.context = context
         ensureRoot()
+        migrateMemoryTheme()
         purgeExpiredTrash()
         restoreTabs()
         centerOnRoot()
@@ -351,6 +352,24 @@ final class Workspace {
     }
 
     // MARK: - Setup
+
+    /// Раньше память для ИИ была темой «Память». Теперь это отметка на заметке:
+    /// заметки темы получают отметку «Для ИИ», а сама тема (если опустела) удаляется.
+    private func migrateMemoryTheme() {
+        let key = "migration.memoryThemeToFlag"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        let themes = (try? context.fetch(FetchDescriptor<Theme>())) ?? []
+        for theme in themes where theme.name.compare("Память", options: .caseInsensitive) == .orderedSame {
+            for node in Array(theme.nodes) {
+                node.isForAI = true
+                node.theme = nil
+            }
+            if filterThemeID == theme.id { filterThemeID = nil }
+            context.delete(theme)
+        }
+        if context.hasChanges { try? context.save() }
+        UserDefaults.standard.set(true, forKey: key)
+    }
 
     private func ensureRoot() {
         let d = FetchDescriptor<Node>(predicate: #Predicate { $0.isRoot == true })

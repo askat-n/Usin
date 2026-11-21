@@ -7,9 +7,19 @@ struct NoteFolder: Identifiable {
     let name: String
     let color: Color
     let notes: [Node]
+    /// Свой значок вместо папки (у «Памяти ИИ»).
+    var symbol: String? = nil
 }
 
 private let noThemeFolderID = UUID(uuidString: "00000000-0000-4000-8000-00000000F01D")!
+private let memoryFolderID = UUID(uuidString: "00000000-0000-4000-8000-0000000A1A1A")!
+
+/// «Память ИИ» — не тема, а все заметки с отметкой «Для ИИ» из любых тем: то, что видят ИИ-ассистенты.
+func memoryFolder(nodes: [Node]) -> NoteFolder {
+    let notes = nodes.filter { !$0.isRoot && $0.isForAI }
+        .sorted { $0.displayTitle.localizedStandardCompare($1.displayTitle) == .orderedAscending }
+    return NoteFolder(id: memoryFolderID, name: tr("Память ИИ"), color: AIAccess.color, notes: notes, symbol: AIAccess.symbol)
+}
 
 /// Папки-темы по порядку, в конце — «Без темы». Заметки внутри — по названию.
 func noteFolders(nodes: [Node], themes: [Theme]) -> [NoteFolder] {
@@ -41,6 +51,7 @@ struct FileSidebar: View {
 
     var body: some View {
         let folders = noteFolders(nodes: nodes, themes: themes)
+        let memory = memoryFolder(nodes: nodes)
         VStack(spacing: 0) {
             HStack(spacing: 2) {
                 Text(tr("Заметки").uppercased())
@@ -59,7 +70,7 @@ struct FileSidebar: View {
                 }
                 SidebarIconButton(icon: "rectangle.compress.vertical", help: tr("Свернуть все")) {
                     withAnimation(.snappy(duration: 0.2)) {
-                        collapsed = Set(folders.map { $0.id ?? noThemeFolderID })
+                        collapsed = Set(folders.map { $0.id ?? noThemeFolderID } + [memoryFolderID])
                     }
                 }
             }
@@ -69,6 +80,30 @@ struct FileSidebar: View {
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
+                    let memoryOpen = !collapsed.contains(memoryFolderID)
+                    FolderRow(folder: memory, open: memoryOpen) {
+                        withAnimation(.snappy(duration: 0.2)) {
+                            if memoryOpen { collapsed.insert(memoryFolderID) } else { collapsed.remove(memoryFolderID) }
+                        }
+                    }
+                    if memoryOpen {
+                        if memory.notes.isEmpty {
+                            Text(tr("Здесь то, что видят ИИ-ассистенты. Отметь заметку «Для ИИ» — она появится здесь."))
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.leading, 34)
+                                .padding(.trailing, 12)
+                                .padding(.vertical, 4)
+                        }
+                        ForEach(memory.notes) { note in
+                            NoteFileRow(note: note, active: ws.activeTab == note.id, showsAIMark: false) {
+                                ws.open(note)
+                                onOpen()
+                            }
+                        }
+                    }
+                    Divider().padding(.vertical, 4).padding(.horizontal, 12)
                     ForEach(folders) { folder in
                         let key = folder.id ?? noThemeFolderID
                         let open = !collapsed.contains(key)
@@ -152,7 +187,7 @@ private struct FolderRow: View {
                 .foregroundStyle(.secondary)
                 .rotationEffect(.degrees(open ? 90 : 0))
                 .frame(width: 12)
-            Image(systemName: open ? "folder.fill" : "folder")
+            Image(systemName: folder.symbol ?? (open ? "folder.fill" : "folder"))
                 .font(.system(size: 13))
                 .foregroundStyle(folder.color)
             Text(folder.name)
@@ -176,6 +211,7 @@ private struct FolderRow: View {
 private struct NoteFileRow: View {
     let note: Node
     let active: Bool
+    var showsAIMark = true
     let open: () -> Void
     @Environment(Workspace.self) private var ws
     @State private var hovering = false
@@ -190,6 +226,12 @@ private struct NoteFileRow: View {
                 .opacity(note.hasTitle ? 1 : 0.5)
                 .lineLimit(1)
             Spacer(minLength: 0)
+            if showsAIMark && note.isForAI {
+                Image(systemName: AIAccess.symbol)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(AIAccess.color)
+                    .help(tr("Видна ИИ"))
+            }
         }
         .padding(.leading, 34)
         .padding(.trailing, 12)
@@ -212,6 +254,7 @@ private struct NoteFileMenu: View {
     var body: some View {
         Button { ws.open(note) } label: { Label(tr("Открыть во вкладке"), systemImage: "macwindow") }
         Button { ws.showOnCanvas(note) } label: { Label(tr("Показать на холсте"), systemImage: "circle.hexagongrid") }
+        AIAccessMenuItem(node: note)
         Divider()
         Button(role: .destructive) { ws.delete(note) } label: {
             Label(tr("Переместить в корзину"), systemImage: "trash")
@@ -227,13 +270,14 @@ struct FilesView: View {
     @Query(sort: \Theme.order) private var themes: [Theme]
 
     var body: some View {
-        let folders = noteFolders(nodes: nodes, themes: themes)
+        let memory = memoryFolder(nodes: nodes)
+        let folders = (memory.notes.isEmpty ? [] : [memory]) + noteFolders(nodes: nodes, themes: themes)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 26) {
                 ForEach(folders) { folder in
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 8) {
-                            Image(systemName: "folder.fill").foregroundStyle(folder.color)
+                            Image(systemName: folder.symbol ?? "folder.fill").foregroundStyle(folder.color)
                             Text(folder.name).font(.headline)
                             Text("\(folder.notes.count)")
                                 .font(.subheadline.monospacedDigit())

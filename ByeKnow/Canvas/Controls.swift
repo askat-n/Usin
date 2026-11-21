@@ -314,6 +314,10 @@ struct NodeInspector: View {
             ColorButton(index: $node.inkIndex, useInk: true, textIcon: true, help: tr("Цвет текста"))
             if !node.isRoot {
                 ThemeMenu(theme: $node.theme)
+                ToolButton(icon: AIAccess.symbol, active: node.isForAI,
+                           help: node.isForAI ? tr("Видна ИИ — нажми, чтобы скрыть") : tr("Открыть для ИИ")) {
+                    node.isForAI.toggle()
+                }
             }
             BarSeparator()
             ToolButton(icon: "pencil", help: tr("Переименовать")) { ws.startRenaming(node) }

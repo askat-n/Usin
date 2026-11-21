@@ -135,6 +135,8 @@ final class Node {
     var createdAt: Date = Date()
     /// Когда заметку положили в корзину (nil — не в корзине).
     var deletedAt: Date?
+    /// Заметку видят ИИ-ассистенты: она попадает в папку для MCP («Память ИИ»). Остальные — только для себя.
+    var isForAI: Bool = false
     var theme: Theme?
     @Relationship(deleteRule: .cascade, inverse: \NoteBlock.node)
     var blocks: [NoteBlock] = []

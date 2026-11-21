@@ -152,7 +152,8 @@ final class NoteExporter {
     private func export(to root: URL) throws {
         let fm = FileManager.default
         let nodes = try context.fetch(FetchDescriptor<Node>())
-            .filter { $0.deletedAt == nil && !$0.isRoot }
+            // Для ИИ — только заметки с отметкой «Для ИИ». Остальные остаются личными.
+            .filter { $0.deletedAt == nil && !$0.isRoot && $0.isForAI }
             .sorted { ($0.createdAt, $0.id.uuidString) < ($1.createdAt, $1.id.uuidString) }
         let ids = Set(nodes.map(\.id))
         let connections = try context.fetch(FetchDescriptor<Connection>())
@@ -347,10 +348,12 @@ final class NoteExporter {
         let mode = (meta["mode"] as? String)?.lowercased().trimmingCharacters(in: .whitespaces).nonEmpty
             ?? (section == nil ? "append" : "section")
         let all = (try? context.fetch(FetchDescriptor<Node>())) ?? []
-        let alive = all.filter { $0.deletedAt == nil && !$0.isRoot }
+        // ИИ меняет и связывает только заметки, которые ему видны: личную не тронет, даже угадав название.
+        let alive = all.filter { $0.deletedAt == nil && !$0.isRoot && $0.isForAI }
         let items = Self.blocks(from: lines)
 
         let node: Node
+        var isNew = false
         if mode != "new", let existing = findNode(title, in: alive) {
             node = existing
             backup(node)
@@ -362,6 +365,8 @@ final class NoteExporter {
             let center = rootNode?.position ?? .zero
             node = Node(position: CGPoint(x: center.x + cos(angle) * radius, y: center.y + sin(angle) * radius))
             node.title = title
+            node.isForAI = true
+            isNew = true
             node.shape = AppSettings.shared.defaultShape
             if node.shape == .sticker { node.fillIndex = 3 }
             context.insert(node)
@@ -371,7 +376,9 @@ final class NoteExporter {
         }
 
         if let color = meta["color"] as? String, let index = Self.colorIndex(color) { node.fillIndex = index }
-        if let themeName = (meta["theme"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !themeName.isEmpty {
+        // Тему ставим только новой заметке. «Память» — больше не тема, а отметка «Для ИИ».
+        if isNew, let themeName = (meta["theme"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !themeName.isEmpty,
+           themeName.compare("Память", options: .caseInsensitive) != .orderedSame {
             let themes = (try? context.fetch(FetchDescriptor<Theme>())) ?? []
             if let theme = themes.first(where: { $0.name.compare(themeName, options: .caseInsensitive) == .orderedSame }) {
                 node.theme = theme
