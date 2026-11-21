@@ -303,7 +303,7 @@ struct ZoomControls: View {
             .help("100%")
             ToolButton(icon: "minus", help: tr("Отдалить")) { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
             Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 20, height: 1).padding(.vertical, 3)
-            ToolButton(icon: "scope", help: tr("К сфере ByeKnow")) { ws.goHome() }
+            ToolButton(icon: "scope", help: tr("К сфере Usin")) { ws.goHome() }
         }
         .padding(5)
         .panelBackground()

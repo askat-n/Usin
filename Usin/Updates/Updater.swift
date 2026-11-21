@@ -1,0 +1,490 @@
+#if os(macOS)
+import AppKit
+import Security
+import SwiftUI
+
+/// Обновления из релизов на GitHub: раз в день смотрим последний релиз и, если он новее,
+/// предлагаем установить его, как это делают обычные приложения для Mac.
+@Observable
+final class Updater {
+    enum State: Equatable {
+        case idle
+        case checking
+        case available(ReleaseInfo)
+        case downloading(Double)
+        case installing
+        case failed(String)
+    }
+
+    static let shared = Updater()
+    static let repository = "askat-n/Usin"
+    private static let checkInterval: TimeInterval = 24 * 60 * 60
+
+    private(set) var state: State = .idle
+    private(set) var lastCheck: Date? = UserDefaults.standard.object(forKey: "updates.lastCheck") as? Date
+
+    /// Раз в день проверять самому. Выключено — только по кнопке «Проверить обновления».
+    var autoCheck: Bool = UserDefaults.standard.object(forKey: "updates.autoCheck") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(autoCheck, forKey: "updates.autoCheck") }
+    }
+
+    /// Что сделать перед выходом для установки (сохранить заметки).
+    var beforeRelaunch: (() -> Void)?
+
+    @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var window: NSWindow?
+    @ObservationIgnored private var download: URLSessionDownloadTask?
+    @ObservationIgnored private var progressObservation: NSKeyValueObservation?
+
+    private var skippedVersion: String? {
+        get { UserDefaults.standard.string(forKey: "updates.skippedVersion") }
+        set { UserDefaults.standard.set(newValue, forKey: "updates.skippedVersion") }
+    }
+
+    static var currentVersion: AppVersion {
+        AppVersion(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") ?? AppVersion("0")!
+    }
+
+    private init() {}
+
+    func start() {
+        guard timer == nil else { return }
+        // Первая проверка — вскоре после запуска, когда всё остальное уже поднялось; дальше раз в час смотрим, не прошли ли сутки.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+            MainActor.assumeIsolated { self?.checkIfDue() }
+        }
+        timer = Timer.scheduledTimer(withTimeInterval: 60 * 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.checkIfDue() }
+        }
+        timer?.tolerance = 300
+    }
+
+    private func checkIfDue() {
+        guard autoCheck else { return }
+        if let lastCheck, Date().timeIntervalSince(lastCheck) < Self.checkInterval { return }
+        Task { await check(manual: false) }
+    }
+
+    var isBusy: Bool {
+        switch state {
+        case .checking, .downloading, .installing: true
+        default: false
+        }
+    }
+
+    /// `manual` — человек сам нажал «Проверить»: тогда сообщаем и о том, что обновлений нет, и об ошибке.
+    func check(manual: Bool) async {
+        guard !isBusy else {
+            if manual { showWindow() }
+            return
+        }
+        state = .checking
+        do {
+            var request = URLRequest(url: URL(string: "https://api.github.com/repos/\(Self.repository)/releases/latest")!)
+            request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+            request.setValue("Usin/\(Self.currentVersion)", forHTTPHeaderField: "User-Agent")
+            request.timeoutInterval = 20
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode
+            // 404 — релизов ещё нет: это не ошибка, просто обновляться не на что.
+            if status == 404 {
+                markChecked()
+                state = .idle
+                if manual { showUpToDate() }
+                return
+            }
+            guard status == 200, let release = ReleaseInfo.parse(data) else { throw UpdateError.badResponse }
+            markChecked()
+            if release.version > Self.currentVersion, manual || skippedVersion != release.version.description {
+                state = .available(release)
+                showWindow()
+            } else {
+                state = .idle
+                if manual { showUpToDate() }
+            }
+        } catch {
+            state = manual ? .failed(tr("Не удалось проверить обновления. Проверь подключение к интернету.")) : .idle
+            if manual { showWindow() }
+        }
+    }
+
+    private func markChecked() {
+        lastCheck = Date()
+        UserDefaults.standard.set(lastCheck, forKey: "updates.lastCheck")
+    }
+
+    // MARK: - Окно
+
+    func showWindow() {
+        if window == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 520, height: 380),
+                styleMask: [.titled, .closable, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = tr("Обновление Usin")
+            window.titlebarAppearsTransparent = true
+            window.isReleasedWhenClosed = false
+            window.contentViewController = NSHostingController(rootView: UpdateView(updater: self))
+            window.center()
+            self.window = window
+        }
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate()
+    }
+
+    func closeWindow() {
+        window?.close()
+        if case .available = state { state = .idle }
+        if case .failed = state { state = .idle }
+    }
+
+    func skip(_ release: ReleaseInfo) {
+        skippedVersion = release.version.description
+        closeWindow()
+    }
+
+    private func showUpToDate() {
+        let alert = NSAlert()
+        alert.messageText = tr("У тебя последняя версия")
+        alert.informativeText = String(format: tr("Usin %@ — самая новая версия."), Self.currentVersion.description)
+        alert.icon = NSApp.applicationIconImage
+        NSApp.activate()
+        alert.runModal()
+    }
+
+    // MARK: - Установка
+
+    func install(_ release: ReleaseInfo) {
+        guard let url = release.downloadURL else {
+            NSWorkspace.shared.open(release.pageURL)
+            closeWindow()
+            return
+        }
+        // Приложение, запущенное прямо из «Загрузок», macOS держит в защищённой временной копии — заменить его нельзя.
+        let bundle = Bundle.main.bundleURL
+        guard !bundle.path.contains("/AppTranslocation/"),
+              FileManager.default.isWritableFile(atPath: bundle.deletingLastPathComponent().path) else {
+            state = .failed(tr("Не получается заменить приложение на месте. Перенеси Usin в папку «Программы» и попробуй снова или скачай новую версию со страницы релиза."))
+            return
+        }
+        state = .downloading(0)
+        let task = URLSession.shared.downloadTask(with: url) { [weak self] file, response, error in
+            // Временный файл исчезает сразу после выхода из этого обработчика, поэтому переносим его здесь.
+            var kept: URL?
+            if let file, error == nil, (response as? HTTPURLResponse)?.statusCode == 200 {
+                let target = FileManager.default.temporaryDirectory.appendingPathComponent("Usin-update-\(UUID().uuidString).zip")
+                if (try? FileManager.default.moveItem(at: file, to: target)) != nil { kept = target }
+            }
+            let cancelled = (error as? URLError)?.code == .cancelled
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.progressObservation = nil
+                    self.download = nil
+                    if cancelled { return }
+                    if let kept { self.unpackAndInstall(kept, release: release) } else {
+                        self.state = .failed(tr("Не удалось скачать обновление. Проверь подключение к интернету."))
+                    }
+                }
+            }
+        }
+        progressObservation = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
+            let value = progress.fractionCompleted
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    guard let self, case .downloading = self.state else { return }
+                    self.state = .downloading(value)
+                }
+            }
+        }
+        download = task
+        task.resume()
+    }
+
+    func cancelDownload() {
+        download?.cancel()
+        download = nil
+        progressObservation = nil
+        closeWindow()
+        state = .idle
+    }
+
+    private func unpackAndInstall(_ archive: URL, release: ReleaseInfo) {
+        state = .installing
+        let current = Bundle.main.bundleURL
+        let expected = release.version
+        Task.detached {
+            let result = Updater.prepare(archive: archive, replacing: current, expected: expected)
+            await MainActor.run {
+                switch result {
+                case .success(let newApp): self.relaunch(into: newApp, replacing: current)
+                case .failure(let error): self.state = .failed(error.message)
+                }
+            }
+        }
+    }
+
+    /// Распаковывает архив и проверяет, что внутри именно Usin нужной версии, подписанный тем же разработчиком.
+    nonisolated private static func prepare(archive: URL, replacing current: URL, expected: AppVersion) -> Result<URL, UpdateError> {
+        let fm = FileManager.default
+        let folder = fm.temporaryDirectory.appendingPathComponent("Usin-update-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: archive) }
+        do { try fm.createDirectory(at: folder, withIntermediateDirectories: true) } catch { return .failure(.unpack) }
+        let ditto = Process()
+        ditto.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        ditto.arguments = ["-x", "-k", archive.path, folder.path]
+        do { try ditto.run() } catch { return .failure(.unpack) }
+        ditto.waitUntilExit()
+        guard ditto.terminationStatus == 0,
+              let app = (try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil))?.first(where: { $0.pathExtension == "app" }),
+              let bundle = Bundle(url: app)
+        else { return .failure(.unpack) }
+
+        guard bundle.bundleIdentifier == Bundle.main.bundleIdentifier,
+              let version = (bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String).flatMap(AppVersion.init),
+              version == expected
+        else { return .failure(.wrongApp) }
+        guard let newTeam = teamIdentifier(of: app), newTeam == teamIdentifier(of: current) else { return .failure(.signature) }
+        return .success(app)
+    }
+
+    /// Команда разработчика из подписи. Обновление ставится, только если она совпадает с текущим приложением:
+    /// так подменённый архив не сможет выдать себя за Usin, а выданные разрешения сохранятся.
+    nonisolated private static func teamIdentifier(of app: URL) -> String? {
+        var code: SecStaticCode?
+        guard SecStaticCodeCreateWithPath(app as CFURL, [], &code) == errSecSuccess, let code,
+              SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), nil) == errSecSuccess
+        else { return nil }
+        var info: CFDictionary?
+        guard SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
+              let dictionary = info as? [String: Any] else { return nil }
+        return dictionary[kSecCodeInfoTeamIdentifier as String] as? String
+    }
+
+    /// Заменить запущенное приложение изнутри нельзя, поэтому это делает маленький скрипт после нашего выхода.
+    private func relaunch(into newApp: URL, replacing current: URL) {
+        let script = """
+        while kill -0 "$1" 2>/dev/null; do sleep 0.2; done
+        rm -rf "$3.old"
+        if mv "$3" "$3.old" && mv "$2" "$3"; then
+            rm -rf "$3.old"
+        elif [ -d "$3.old" ] && [ ! -d "$3" ]; then
+            mv "$3.old" "$3"
+        fi
+        xattr -dr com.apple.quarantine "$3" 2>/dev/null
+        open "$3"
+        """
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", script, "usin-update", String(ProcessInfo.processInfo.processIdentifier), newApp.path, current.path]
+        do {
+            try process.run()
+        } catch {
+            state = .failed(UpdateError.unpack.message)
+            return
+        }
+        beforeRelaunch?()
+        NSApp.terminate(nil)
+    }
+}
+
+enum UpdateError: Error {
+    case badResponse, unpack, wrongApp, signature
+
+    var message: String {
+        switch self {
+        case .badResponse: tr("Не удалось проверить обновления. Проверь подключение к интернету.")
+        case .unpack: tr("Не удалось установить обновление. Скачай новую версию со страницы релиза.")
+        case .wrongApp, .signature: tr("Скачанный файл не прошёл проверку подписи, поэтому он не установлен.")
+        }
+    }
+}
+
+// MARK: - Версия и релиз
+
+/// Номер версии вида «1.2.3». Метки релизов на GitHub пишутся как «v1.2.3» — буква отбрасывается.
+nonisolated struct AppVersion: Comparable, CustomStringConvertible, Sendable {
+    let parts: [Int]
+
+    init?(_ text: String) {
+        var raw = text.trimmingCharacters(in: .whitespaces)
+        if raw.first == "v" || raw.first == "V" { raw.removeFirst() }
+        // «1.2-beta» сравнивается по числовой части.
+        let numeric = raw.prefix { $0.isNumber || $0 == "." }
+        let parts = numeric.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) }
+        guard !parts.isEmpty, parts.allSatisfy({ $0 != nil }) else { return nil }
+        self.parts = parts.compactMap { $0 }
+    }
+
+    var description: String { parts.map(String.init).joined(separator: ".") }
+
+    /// 1.0 и 1.0.0 — одна и та же версия.
+    static func < (lhs: AppVersion, rhs: AppVersion) -> Bool {
+        let count = max(lhs.parts.count, rhs.parts.count)
+        for i in 0..<count {
+            let a = i < lhs.parts.count ? lhs.parts[i] : 0
+            let b = i < rhs.parts.count ? rhs.parts[i] : 0
+            if a != b { return a < b }
+        }
+        return false
+    }
+
+    static func == (lhs: AppVersion, rhs: AppVersion) -> Bool { !(lhs < rhs) && !(rhs < lhs) }
+}
+
+/// Последний релиз с GitHub в том виде, который нужен приложению.
+nonisolated struct ReleaseInfo: Equatable, Sendable {
+    let version: AppVersion
+    let notes: String
+    let pageURL: URL
+    let downloadURL: URL?
+
+    static func == (lhs: ReleaseInfo, rhs: ReleaseInfo) -> Bool {
+        lhs.version == rhs.version && lhs.downloadURL == rhs.downloadURL
+    }
+
+    /// Разбирает ответ `GET /repos/{owner}/{repo}/releases/latest`.
+    /// Черновики и пре-релизы не считаются: пользователю предлагается только готовая версия.
+    static func parse(_ data: Data) -> ReleaseInfo? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              json["draft"] as? Bool != true, json["prerelease"] as? Bool != true,
+              let tag = json["tag_name"] as? String, let version = AppVersion(tag),
+              let page = (json["html_url"] as? String).flatMap(URL.init(string:))
+        else { return nil }
+        let assets = json["assets"] as? [[String: Any]] ?? []
+        let zip = assets.first { ($0["name"] as? String)?.lowercased().hasSuffix(".zip") == true }
+        let download = (zip?["browser_download_url"] as? String).flatMap(URL.init(string:))
+        // Скачивать разрешено только с самого GitHub.
+        let trusted = download.flatMap { url -> URL? in
+            guard url.scheme == "https", let host = url.host, host == "github.com" || host.hasSuffix(".githubusercontent.com") else { return nil }
+            return url
+        }
+        return ReleaseInfo(version: version, notes: json["body"] as? String ?? "", pageURL: page, downloadURL: trusted)
+    }
+}
+
+// MARK: - Интерфейс
+
+private struct UpdateView: View {
+    let updater: Updater
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .frame(width: 64, height: 64)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(.title3.weight(.semibold))
+                    Text(subtitle).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            content
+        }
+        .padding(24)
+        .padding(.top, 8)
+        .frame(width: 520, height: 380, alignment: .topLeading)
+    }
+
+    private var title: String {
+        switch updater.state {
+        case .available: tr("Доступна новая версия Usin")
+        case .downloading: tr("Загрузка обновления…")
+        case .installing: tr("Установка…")
+        case .failed: tr("Обновление не удалось")
+        case .idle, .checking: tr("Проверка обновлений…")
+        }
+    }
+
+    private var subtitle: String {
+        switch updater.state {
+        case .available(let release):
+            String(format: tr("Версия %@ готова к установке. У тебя %@."), release.version.description, Updater.currentVersion.description)
+        case .downloading, .installing:
+            tr("Usin перезапустится сам, когда всё будет готово.")
+        case .failed(let message):
+            message
+        case .idle, .checking:
+            ""
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch updater.state {
+        case .available(let release):
+            ScrollView {
+                Text(notes(release.notes))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+                    .padding(12)
+            }
+            .background(RoundedRectangle(cornerRadius: 10).fill(.quaternary.opacity(0.5)))
+            HStack {
+                Button(tr("Пропустить эту версию")) { updater.skip(release) }
+                Spacer()
+                Button(tr("Позже")) { updater.closeWindow() }
+                    .keyboardShortcut(.cancelAction)
+                Button(tr("Установить")) { updater.install(release) }
+                    .keyboardShortcut(.defaultAction)
+            }
+        case .downloading(let progress):
+            Spacer()
+            ProgressView(value: progress)
+            HStack {
+                Spacer()
+                Button(tr("Отменить")) { updater.cancelDownload() }
+            }
+        case .installing, .checking, .idle:
+            Spacer()
+            ProgressView().progressViewStyle(.linear)
+        case .failed:
+            Spacer()
+            HStack {
+                Button(tr("Открыть страницу релиза")) {
+                    NSWorkspace.shared.open(URL(string: "https://github.com/\(Updater.repository)/releases/latest")!)
+                }
+                Spacer()
+                Button(tr("Закрыть")) { updater.closeWindow() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+    }
+
+    /// Описание релиза написано в Markdown; показываем его с оформлением, а не со звёздочками.
+    private func notes(_ text: String) -> AttributedString {
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
+    }
+}
+
+/// Раздел «Обновления» в настройках.
+struct UpdatesSection: View {
+    @Bindable private var updater = Updater.shared
+
+    var body: some View {
+        Toggle(tr("Проверять автоматически"), isOn: $updater.autoCheck)
+        HStack {
+            Button(tr("Проверить обновления")) {
+                Task { await updater.check(manual: true) }
+            }
+            .disabled(updater.isBusy)
+            if case .checking = updater.state {
+                ProgressView().controlSize(.small)
+            }
+            Spacer()
+            if let last = updater.lastCheck {
+                Text(tr("Последняя проверка") + ": " + last.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        Text(tr("Раз в день Usin смотрит, нет ли новой версии на GitHub, и предлагает её установить. Заметки и настройки при обновлении сохраняются."))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+#endif

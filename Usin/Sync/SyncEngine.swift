@@ -383,7 +383,7 @@ final class SyncEngine {
             if legacyIndex[rec.id] == data { return Ledger.legacyStamp }
             // Сфера по умолчанию на новом устройстве не должна перебить настроенную.
             if let node = rec as? NodeRecord, node.isRoot,
-               node.title == "ByeKnow", node.x == 0, node.y == 0, node.fillIndex == 6, node.inkIndex == 0 {
+               ["ByeKnow", "Usin"].contains(node.title), node.x == 0, node.y == 0, node.fillIndex == 6, node.inkIndex == 0 {
                 return Ledger.freshRootStamp
             }
             if baseIndex[rec.id] == data { return Ledger.staleCopyStamp }
@@ -438,7 +438,7 @@ final class SyncEngine {
 
     private static var supportDir: URL {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("ByeKnow", isDirectory: true)
+            .appendingPathComponent("Usin", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

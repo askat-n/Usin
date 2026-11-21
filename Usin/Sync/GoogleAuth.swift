@@ -190,7 +190,7 @@ enum Keychain {
     private static func query(_ key: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "ByeKnow",
+            kSecAttrService as String: "Usin",
             kSecAttrAccount as String: key,
         ]
     }

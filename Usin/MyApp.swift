@@ -15,7 +15,12 @@ import AppKit
     init() {
         let container: ModelContainer
         do {
-            container = try ModelContainer(for: Node.self, NoteBlock.self, Connection.self, Theme.self)
+            // На Mac приложение без песочницы: своя папка, иначе база легла бы в общую Application Support.
+            let folder = URL.applicationSupportDirectory.appending(path: "Usin", directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let config = ModelConfiguration(url: folder.appending(path: "Usin.store"))
+            container = try ModelContainer(for: Node.self, NoteBlock.self, Connection.self, Theme.self,
+                                           configurations: config)
         } catch {
             fatalError("Не удалось открыть базу заметок: \(error)")
         }
@@ -24,6 +29,8 @@ import AppKit
         _sync = State(initialValue: SyncEngine(context: container.mainContext))
         #if os(macOS)
         _exporter = State(initialValue: NoteExporter(context: container.mainContext))
+        Updater.shared.beforeRelaunch = { try? container.mainContext.save() }
+        Updater.shared.start()
         #endif
     }
 
@@ -52,6 +59,13 @@ struct WorkspaceCommands: Commands {
     let ws: Workspace
 
     var body: some Commands {
+        #if os(macOS)
+        CommandGroup(after: .appInfo) {
+            Button(tr("Проверить обновления") + "…") {
+                Task { await Updater.shared.check(manual: true) }
+            }
+        }
+        #endif
         CommandGroup(replacing: .appSettings) {
             Button(tr("Настройки") + "…") { ws.showSettings = true }
                 .keyboardShortcut(",")
@@ -89,7 +103,7 @@ struct WorkspaceCommands: Commands {
             Button(tr("Все заметки…")) { ws.showAllNotes = true }
                 .keyboardShortcut("k")
             Divider()
-            Button(tr("К сфере ByeKnow")) { ws.showHome(.canvas); ws.goHome() }
+            Button(tr("К сфере Usin")) { ws.showHome(.canvas); ws.goHome() }
                 .keyboardShortcut("0")
             Button(tr("Приблизить")) { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
                 .keyboardShortcut("=")

@@ -87,13 +87,19 @@ struct SettingsView: View {
                     }
                 }
 
+                #if os(macOS)
+                Section(tr("Обновления")) {
+                    UpdatesSection()
+                }
+                #endif
+
                 Section(tr("О приложении")) {
                     NavigationLink {
                         HelpView()
                     } label: {
                         Label(tr("Как пользоваться"), systemImage: "questionmark.circle")
                     }
-                    LabeledContent("ByeKnow", value: tr("Версия") + " " + appVersion)
+                    LabeledContent("Usin", value: tr("Версия") + " " + appVersion)
                 }
             }
             .formStyle(.grouped)
@@ -207,7 +213,7 @@ struct SettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        Text(tr("В папке — копия заметок с отметкой «Для ИИ» (✦): по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Остальные заметки остаются личными и в папку не попадают. Её читают ИИ-ассистенты через MCP-сервер ByeKnow. Записи ИИ из подпапки inbox ByeKnow применяет сам."))
+        Text(tr("В папке — копия заметок с отметкой «Для ИИ» (✦): по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Остальные заметки остаются личными и в папку не попадают. Её читают ИИ-ассистенты через MCP-сервер Usin. Записи ИИ из подпапки inbox Usin применяет сам."))
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)

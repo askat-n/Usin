@@ -334,7 +334,7 @@ final class Workspace {
 
     // MARK: - Camera
 
-    /// Вернуться к сфере ByeKnow — где бы она ни стояла.
+    /// Вернуться к сфере Usin — где бы она ни стояла.
     func goHome() {
         withAnimation(.snappy) { centerOnRoot() }
     }
@@ -389,7 +389,7 @@ final class Workspace {
             let root = Node(position: .zero)
             root.id = Node.rootID
             root.isRoot = true
-            root.title = "ByeKnow"
+            root.title = "Usin"
             root.shape = .circle
             root.fillIndex = 6
             context.insert(root)

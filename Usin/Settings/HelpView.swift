@@ -8,8 +8,8 @@ struct HelpView: View {
     var body: some View {
         List {
             Section {
-                Text(t("ByeKnow — заметки на бесконечном холсте. В центре сфера ByeKnow, от неё ты строишь свою схему: заметки, стрелки, темы.",
-                       "ByeKnow is notes on an infinite canvas. The ByeKnow sphere sits in the center, and you build your map around it: notes, arrows, themes."))
+                Text(t("Usin — заметки на бесконечном холсте. В центре сфера Usin, от неё ты строишь свою схему: заметки, стрелки, темы.",
+                       "Usin is notes on an infinite canvas. The Usin sphere sits in the center, and you build your map around it: notes, arrows, themes."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -19,8 +19,8 @@ struct HelpView: View {
                                    "Hold your finger (or mouse) on an empty spot to create a note"))
                 item("hand.draw", t("Тяни пустое место — двигаешь холст. Щипок или ⌘ + прокрутка — масштаб",
                                     "Drag an empty spot to pan. Pinch or ⌘ + scroll to zoom"))
-                item("scope", t("Кнопка ◎ справа — вернуться к сфере ByeKnow",
-                                "The ◎ button on the right takes you back to the ByeKnow sphere"))
+                item("scope", t("Кнопка ◎ справа — вернуться к сфере Usin",
+                                "The ◎ button on the right takes you back to the Usin sphere"))
                 item("sparkles", t("Настройки → Оформление: «Космос» (живой космос), «Терминал» (как экран компьютера) или «Классический». Анимацию можно выключить",
                                    "Settings → Appearance: “Cosmos” (living space), “Terminal” (computer screen look) or “Classic”. Animation can be turned off"))
             }
@@ -96,7 +96,7 @@ struct HelpView: View {
             ("⌘2…⌘9", t("Вкладки по порядку", "Tabs in order")),
             ("⇧⌘] / ⇧⌘[", t("Следующая / предыдущая вкладка", "Next / previous tab")),
             ("⌘= / ⌘−", t("Приблизить / отдалить", "Zoom in / out")),
-            ("⌘0", t("К сфере ByeKnow", "Back to the sphere")),
+            ("⌘0", t("К сфере Usin", "Back to the sphere")),
             ("⌘,", t("Настройки", "Settings")),
         ]
     }

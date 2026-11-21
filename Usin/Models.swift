@@ -146,7 +146,7 @@ final class Node {
         y = position.y
     }
 
-    /// У сферы ByeKnow один и тот же id на всех устройствах — так синхронизация не плодит две сферы.
+    /// У сферы Usin один и тот же id на всех устройствах — так синхронизация не плодит две сферы.
     static let rootID = UUID(uuidString: "B1E0B1E0-0000-4000-8000-000000000001")!
 
     var shape: NodeShape {
