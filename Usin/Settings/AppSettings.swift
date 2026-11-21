@@ -50,6 +50,9 @@ enum CanvasStyle: String, CaseIterable, Identifiable {
 @Observable
 final class AppSettings {
     static let shared = AppSettings()
+    /// Mac: значок в Dock и в строке меню. Хранятся через @AppStorage — их читает и сцена строки меню.
+    static let showInDockKey = "settings.showInDock"
+    static let menuBarIconKey = "settings.showMenuBarIcon"
     static let holdOptions: [Double] = [1.0, 1.25, 1.5, 2.0]
 
     private let defaults = UserDefaults.standard
@@ -326,7 +329,7 @@ private let englishStrings: [String: String] = [
     "Обновления": "Updates",
     "Проверять автоматически": "Check automatically",
     "Проверить обновления": "Check for Updates",
-    "Последняя проверка": "Last checked",
+    "Последняя проверка: %@": "Last checked: %@",
     "Раз в день Usin смотрит, нет ли новой версии на GitHub, и предлагает её установить. Заметки и настройки при обновлении сохраняются.": "Once a day Usin checks GitHub for a new version and offers to install it. Notes and settings are kept.",
     "Обновление Usin": "Usin Update",
     "У тебя последняя версия": "You’re up to date",
@@ -348,4 +351,21 @@ private let englishStrings: [String: String] = [
     "Установить": "Install",
     "Открыть страницу релиза": "Open Release Page",
     "Закрыть": "Close",
+    // Окно настроек
+    "Основные": "General",
+    "Справка": "Help",
+    "Нужно действие": "Needs attention",
+    "Приложение": "App",
+    "Запускать при входе в систему": "Open at login",
+    "Нужно разрешить в Системных настройках": "Needs approval in System Settings",
+    "Значок в Dock": "Show in Dock",
+    "Значок в строке меню": "Show in menu bar",
+    "Из строки меню — новая заметка, настройки и обновления.": "The menu bar icon gives quick access to a new note, settings and updates.",
+    "Без значка в Dock Usin открывается из значка в строке меню.": "Without the Dock icon, open Usin from its menu bar icon.",
+    "Тёмные стили холста всегда в тёмном оформлении. Стиль холста — в разделе «Заметки».": "Dark canvas styles always use dark mode. The canvas style is in Notes.",
+    "Открыть Usin": "Open Usin",
+    "Выйти из Usin": "Quit Usin",
+    "Проверить сейчас": "Check Now",
+    "Версия %@": "Version %@",
+    "Ещё не проверялось": "Not checked yet",
 ]

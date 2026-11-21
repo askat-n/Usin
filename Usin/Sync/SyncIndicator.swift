@@ -40,7 +40,7 @@ struct SyncIndicator: View {
 
     var body: some View {
         Button {
-            if state == .off { ws.showSettings = true } else { showDetails = true }
+            if state == .off { ws.openSettings(.notes) } else { showDetails = true }
         } label: {
             Image(systemName: state.icon)
                 .font(.system(size: 15, weight: .medium))

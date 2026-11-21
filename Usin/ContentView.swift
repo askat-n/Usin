@@ -20,6 +20,8 @@ struct ContentView: View {
     private var compact: Bool { sizeClass == .compact }
     #else
     private let compact = false
+    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     #endif
 
     var body: some View {
@@ -74,9 +76,21 @@ struct ContentView: View {
         .sheet(isPresented: $ws.showAllNotes) {
             AllNotesView()
         }
+        #if os(macOS)
+        // Значку в строке меню нужно уметь открыть окно холста, даже если все окна закрыты.
+        .onAppear { StatusItemController.shared.openMainWindow = { openWindow(id: MainWindow.id) } }
+        // На Mac настройки — отдельное окно (⌘,), как у обычных приложений.
+        .onChange(of: ws.showSettings) { _, show in
+            guard show else { return }
+            ws.showSettings = false
+            NSApp.activate()
+            openSettings()
+        }
+        #else
         .sheet(isPresented: $ws.showSettings) {
             SettingsView()
         }
+        #endif
         // Синхронизация: при запуске, при возвращении в приложение, после правок и проверка Drive каждую секунду.
         .task {
             await sync.syncNow()

@@ -563,12 +563,16 @@ private struct HoldRing: View {
 private struct ScrollWheelPan: ViewModifier {
     let ws: Workspace
     @State private var monitor: Any?
+    @State private var host = WindowBox()
 
     func body(content: Content) -> some View {
         content
+            .background(WindowReader(box: host))
             .onAppear {
-                monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [ws] event in
-                    Self.handle(event, ws: ws)
+                monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [ws, host] event in
+                    // Только окно с этим холстом: настройки и другие окна прокручиваются как обычно.
+                    guard let window = event.window, window === host.window else { return event }
+                    return Self.handle(event, ws: ws)
                 }
             }
             .onDisappear {
@@ -596,6 +600,31 @@ private struct ScrollWheelPan: ViewModifier {
             ws.offset.height += event.scrollingDeltaY * k
         }
         return nil
+    }
+}
+
+/// Слабая ссылка на окно, в котором стоит холст.
+private final class WindowBox {
+    weak var window: NSWindow?
+}
+
+private struct WindowReader: NSViewRepresentable {
+    let box: WindowBox
+
+    func makeNSView(context: Context) -> NSView { Reader(box: box) }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    private final class Reader: NSView {
+        let box: WindowBox
+        init(box: WindowBox) {
+            self.box = box
+            super.init(frame: .zero)
+        }
+        required init?(coder: NSCoder) { fatalError() }
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            box.window = window
+        }
     }
 }
 #endif

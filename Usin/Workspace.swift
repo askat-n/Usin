@@ -65,6 +65,13 @@ final class Workspace {
 
     var showAllNotes = false
     var showSettings = false
+    /// Какой раздел открыть в настройках; окно настроек забирает его и обнуляет.
+    var settingsPage: SettingsPage?
+
+    func openSettings(_ page: SettingsPage? = nil) {
+        settingsPage = page
+        showSettings = true
+    }
     /// Недавно закрытые вкладки — для ⇧⌘T.
     private var closedTabs: [UUID] = []
 

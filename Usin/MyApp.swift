@@ -10,6 +10,7 @@ import AppKit
     @State private var sync: SyncEngine
     #if os(macOS)
     @State private var exporter: NoteExporter
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     #endif
 
     init() {
@@ -25,17 +26,19 @@ import AppKit
             fatalError("Не удалось открыть базу заметок: \(error)")
         }
         self.container = container
-        _workspace = State(initialValue: Workspace(context: container.mainContext))
+        let workspace = Workspace(context: container.mainContext)
+        _workspace = State(initialValue: workspace)
         _sync = State(initialValue: SyncEngine(context: container.mainContext))
         #if os(macOS)
         _exporter = State(initialValue: NoteExporter(context: container.mainContext))
         Updater.shared.beforeRelaunch = { try? container.mainContext.save() }
         Updater.shared.start()
+        StatusItemController.shared.workspace = workspace
         #endif
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             ContentView()
                 .environment(workspace)
                 .environment(sync)
@@ -52,6 +55,21 @@ import AppKit
         .commands {
             WorkspaceCommands(ws: workspace)
         }
+
+        #if os(macOS)
+        // Настройки — отдельное окно с боковой панелью (⌘,).
+        Settings {
+            SettingsView()
+                .environment(workspace)
+                .environment(sync)
+                .environment(exporter)
+                .environment(AppSettings.shared)
+                .preferredColorScheme(AppSettings.shared.effectiveColorScheme)
+        }
+        .modelContainer(container)
+        .windowResizability(.contentMinSize)
+
+        #endif
     }
 }
 
@@ -66,10 +84,13 @@ struct WorkspaceCommands: Commands {
             }
         }
         #endif
+        #if os(iOS)
+        // На Mac пункт «Настройки…» (⌘,) добавляет сцена Settings.
         CommandGroup(replacing: .appSettings) {
             Button(tr("Настройки") + "…") { ws.showSettings = true }
                 .keyboardShortcut(",")
         }
+        #endif
 
         // Файл
         CommandGroup(replacing: .newItem) {

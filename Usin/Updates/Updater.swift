@@ -465,26 +465,29 @@ struct UpdatesSection: View {
     @Bindable private var updater = Updater.shared
 
     var body: some View {
-        Toggle(tr("Проверять автоматически"), isOn: $updater.autoCheck)
-        HStack {
-            Button(tr("Проверить обновления")) {
-                Task { await updater.check(manual: true) }
+        Section {
+            Toggle(tr("Проверять автоматически"), isOn: $updater.autoCheck)
+            LabeledContent {
+                if case .checking = updater.state {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button(tr("Проверить сейчас")) { Task { await updater.check(manual: true) } }
+                        .disabled(updater.isBusy)
+                }
+            } label: {
+                Text(String(format: tr("Версия %@"), Updater.currentVersion.description))
+                Text(lastCheckText)
             }
-            .disabled(updater.isBusy)
-            if case .checking = updater.state {
-                ProgressView().controlSize(.small)
-            }
-            Spacer()
-            if let last = updater.lastCheck {
-                Text(tr("Последняя проверка") + ": " + last.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+        } header: {
+            Text(tr("Обновления"))
+        } footer: {
+            Text(tr("Раз в день Usin смотрит, нет ли новой версии на GitHub, и предлагает её установить. Заметки и настройки при обновлении сохраняются."))
         }
-        Text(tr("Раз в день Usin смотрит, нет ли новой версии на GitHub, и предлагает её установить. Заметки и настройки при обновлении сохраняются."))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var lastCheckText: String {
+        guard let date = updater.lastCheck else { return tr("Ещё не проверялось") }
+        return String(format: tr("Последняя проверка: %@"), date.formatted(.relative(presentation: .named)))
     }
 }
 #endif
