@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 #if os(macOS)
 import AppKit
+import UsinTools
 #endif
 
 @main struct MyApp: App {
@@ -31,7 +32,10 @@ import AppKit
         _sync = State(initialValue: SyncEngine(context: container.mainContext))
         #if os(macOS)
         _exporter = State(initialValue: NoteExporter(context: container.mainContext))
-        Updater.shared.beforeRelaunch = { try? container.mainContext.save() }
+        Updater.shared.beforeRelaunch = {
+            try? container.mainContext.save()
+            ToolsRuntime.willTerminate()
+        }
         Updater.shared.start()
         StatusItemController.shared.workspace = workspace
         #endif

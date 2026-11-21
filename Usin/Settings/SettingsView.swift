@@ -3,20 +3,30 @@ import AuthenticationServices
 import SwiftData
 #if os(macOS)
 import ServiceManagement
+import UsinTools
 #endif
 
 /// Разделы настроек. На Mac — строки боковой панели, как в Системных настройках; на iPhone — список.
-/// Модули Mac (чёлка, диктовка, буфер обмена…) добавятся сюда отдельными строками.
-enum SettingsPage: String, Hashable, CaseIterable, Identifiable {
+/// На Mac к ним добавляются инструменты (чёлка, диктовка, буфер обмена…) и сервисы.
+enum SettingsPage: Hashable, Identifiable {
     case general, notes, help
+    #if os(macOS)
+    case tool(ToolPage)
+    #endif
 
-    var id: String { rawValue }
+    /// Разделы, которые есть и на Mac, и на iPhone.
+    static let common: [SettingsPage] = [.general, .notes, .help]
+
+    var id: Self { self }
 
     var title: String {
         switch self {
         case .general: tr("Основные")
         case .notes: tr("Заметки")
         case .help: tr("Справка")
+        #if os(macOS)
+        case .tool(let page): page.title
+        #endif
         }
     }
 
@@ -25,6 +35,9 @@ enum SettingsPage: String, Hashable, CaseIterable, Identifiable {
         case .general: "gearshape.fill"
         case .notes: "circle.hexagongrid.fill"
         case .help: "questionmark"
+        #if os(macOS)
+        case .tool(let page): page.symbol
+        #endif
         }
     }
 
@@ -33,6 +46,9 @@ enum SettingsPage: String, Hashable, CaseIterable, Identifiable {
         case .general: .gray
         case .notes: .orange
         case .help: .blue
+        #if os(macOS)
+        case .tool(let page): page.tint
+        #endif
         }
     }
 }
@@ -88,6 +104,9 @@ struct SettingsView: View {
         case .general: GeneralSettingsPage()
         case .notes: NotesSettingsPage()
         case .help: HelpView()
+        #if os(macOS)
+        case .tool(let page): ToolPageView(page)
+        #endif
         }
     }
 
@@ -97,6 +116,12 @@ struct SettingsView: View {
             List(selection: $page) {
                 row(.general)
                 row(.notes)
+                Section(tr("Инструменты Mac")) {
+                    ForEach(ToolPage.tools, id: \.self) { toolRow($0) }
+                }
+                Section(tr("Сервисы")) {
+                    ForEach(ToolPage.services, id: \.self) { toolRow($0) }
+                }
                 Section {
                     row(.help)
                 }
@@ -118,11 +143,15 @@ struct SettingsView: View {
     private func row(_ page: SettingsPage) -> some View {
         SettingsRow(page: page, attention: needsAttention(page)).tag(page)
     }
+
+    private func toolRow(_ page: ToolPage) -> some View {
+        ToolSidebarRow(page).tag(SettingsPage.tool(page))
+    }
     #else
     private var container: some View {
         NavigationStack(path: $path) {
             List {
-                ForEach(SettingsPage.allCases) { page in
+                ForEach(SettingsPage.common) { page in
                     NavigationLink(value: page) {
                         SettingsRow(page: page, attention: needsAttention(page))
                     }
@@ -217,9 +246,13 @@ struct GeneralSettingsPage: View {
                 Text(tr("Приложение"))
             } footer: {
                 Text(showInDock
-                     ? tr("Из строки меню — новая заметка, настройки и обновления.")
+                     ? tr("Из строки меню — новая заметка, цифры Mac, настройки и обновления.")
                      : tr("Без значка в Dock Usin открывается из значка в строке меню."))
             }
+            #endif
+
+            #if os(macOS)
+            ToolsGeneralSections()
             #endif
 
             Section(tr("Язык")) {

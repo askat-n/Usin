@@ -6,6 +6,10 @@
 	objectVersion = 90;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		000000000000000150000001 /* UsinTools in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 000000000000000160000001 /* UsinTools */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		000000000000000000000120 /* Usin.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Usin.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -22,6 +26,7 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				000000000000000150000001 /* UsinTools in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -53,6 +58,7 @@
 				000000000000000120000000 /* Sources */,
 				000000000000000130000000 /* Frameworks */,
 				000000000000000140000000 /* Resources */,
+				000000000000000180000001 /* Now Playing helper */,
 			);
 			buildRules = (
 			);
@@ -60,6 +66,9 @@
 				000000000000000000000010 /* Usin */,
 			);
 			name = Usin;
+			packageProductDependencies = (
+				000000000000000160000001 /* UsinTools */,
+			);
 			productName = Usin;
 			productReference = 000000000000000000000120 /* Usin.app */;
 			productType = "com.apple.product-type.application";
@@ -85,9 +94,20 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
+				es,
+				"zh-Hans",
+				ar,
+				fr,
+				vi,
+				ko,
+				tl,
 			);
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				000000000000000170000001 /* XCLocalSwiftPackageReference "Packages/UsinTools" */,
+			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
 			projectDirPath = "";
@@ -105,6 +125,23 @@
 			);
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		000000000000000180000001 /* Now Playing helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			inputPaths = (
+				"$(SRCROOT)/Packages/UsinTools/Helpers/nowplaying/bridge.m",
+				"$(SRCROOT)/Packages/UsinTools/Helpers/nowplaying/bridge.pl",
+			);
+			name = "Now Playing helper";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/nowplaying.dylib",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/nowplaying.pl",
+			);
+			shellPath = /bin/sh;
+			shellScript = "# Мост к системному «Сейчас играет» для чёлки (только Mac): библиотека загружается системным perl.\nif [ \"$PLATFORM_NAME\" != \"macosx\" ]; then exit 0; fi\nSRC=\"$SRCROOT/Packages/UsinTools/Helpers/nowplaying\"\nOUT=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\nmkdir -p \"$OUT\"\nxcrun clang -fobjc-arc -dynamiclib -arch arm64 -arch arm64e -framework Foundation \"$SRC/bridge.m\" -o \"$OUT/nowplaying.dylib\"\ncp \"$SRC/bridge.pl\" \"$OUT/nowplaying.pl\"\nif [ -n \"$EXPANDED_CODE_SIGN_IDENTITY\" ] && [ \"$EXPANDED_CODE_SIGN_IDENTITY\" != \"-\" ]; then\n    codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" \"$OUT/nowplaying.dylib\"\nelse\n    codesign --force --sign - \"$OUT/nowplaying.dylib\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		000000000000000120000000 /* Sources */ = {
@@ -250,6 +287,11 @@
 		000000000000000111000000 /* Debug configuration for PBXNativeTarget "Usin" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				"INFOPLIST_KEY_NSAppleEventsUsageDescription[sdk=macosx*]" = "Usin сохраняет записи встреч в приложение «Заметки».";
+				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription[sdk=macosx*]" = "Usin показывает в виджете ближайшую встречу из календаря.";
+				"INFOPLIST_KEY_NSMicrophoneUsageDescription[sdk=macosx*]" = "Usin слушает микрофон, только пока ты держишь клавишу голосового ввода или записываешь встречу.";
+				"INFOPLIST_KEY_NSSpeechRecognitionUsageDescription[sdk=macosx*]" = "Usin превращает сказанное в текст и вставляет его у курсора.";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A3R7X7XVXB;
@@ -291,6 +333,11 @@
 		000000000000000112000000 /* Release configuration for PBXNativeTarget "Usin" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				"INFOPLIST_KEY_NSAppleEventsUsageDescription[sdk=macosx*]" = "Usin сохраняет записи встреч в приложение «Заметки».";
+				"INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription[sdk=macosx*]" = "Usin показывает в виджете ближайшую встречу из календаря.";
+				"INFOPLIST_KEY_NSMicrophoneUsageDescription[sdk=macosx*]" = "Usin слушает микрофон, только пока ты держишь клавишу голосового ввода или записываешь встречу.";
+				"INFOPLIST_KEY_NSSpeechRecognitionUsageDescription[sdk=macosx*]" = "Usin превращает сказанное в текст и вставляет его у курсора.";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = A3R7X7XVXB;
@@ -349,6 +396,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		000000000000000170000001 /* XCLocalSwiftPackageReference "Packages/UsinTools" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/UsinTools;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		000000000000000160000001 /* UsinTools */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 000000000000000170000001 /* XCLocalSwiftPackageReference "Packages/UsinTools" */;
+			productName = UsinTools;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 000000000000000000000000 /* Project object */;
 }
