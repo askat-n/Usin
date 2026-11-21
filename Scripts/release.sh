@@ -30,9 +30,15 @@ fi
 
 BUILD="$ROOT/build/release"
 rm -rf "$BUILD"
-xcodebuild -project Usin.xcodeproj -scheme Usin -configuration Release \
+mkdir -p "$BUILD"
+echo "Сборка Usin $VERSION…"
+if ! xcodebuild -project Usin.xcodeproj -scheme Usin -configuration Release \
     -destination 'generic/platform=macOS' -derivedDataPath "$BUILD/dd" \
-    -allowProvisioningUpdates -quiet build
+    -allowProvisioningUpdates build > "$BUILD/build.log" 2>&1; then
+    grep -E "error:" "$BUILD/build.log" | head -20
+    echo "Сборка не удалась, полный журнал: $BUILD/build.log"
+    exit 1
+fi
 
 APP="$BUILD/dd/Build/Products/Release/Usin.app"
 codesign --verify --strict --deep "$APP"
