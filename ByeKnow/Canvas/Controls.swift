@@ -196,6 +196,23 @@ struct FilterBar: View {
                 chip(tr("Все"), color: .secondary, active: ws.filterThemeID == nil) {
                     ws.filterThemeID = nil
                 }
+                // Не тема, а отметка: заметки, которые видят ИИ-ассистенты.
+                Button {
+                    withAnimation(.snappy) { ws.filterThemeID = ws.isAIFilter ? nil : Workspace.aiFilterID }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: AIAccess.symbol).font(.system(size: 11, weight: .semibold))
+                        Text(tr("Для ИИ")).lineLimit(1)
+                    }
+                    .font(.subheadline.weight(ws.isAIFilter ? .semibold : .regular))
+                    .foregroundStyle(ws.isAIFilter ? AIAccess.color : Color.primary)
+                    .padding(.horizontal, 12)
+                    .frame(height: 30)
+                    .background(ws.isAIFilter ? AIAccess.color.opacity(0.18) : .clear, in: Capsule())
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(tr("Заметки, которые видят ИИ-ассистенты"))
                 ForEach(themes) { t in
                     let active = ws.filterThemeID == t.id
                     chip(t.name, color: Palette.swatch(t.colorIndex).ink, active: active) {

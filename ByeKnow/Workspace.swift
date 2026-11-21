@@ -25,6 +25,16 @@ final class Workspace {
     var editingTitleID: UUID?
     var filterThemeID: UUID?
 
+    /// Особое значение фильтра: показать заметки с отметкой «Для ИИ» (вместо темы).
+    static let aiFilterID = UUID(uuidString: "00000000-0000-4000-8000-0000000A1F17")!
+    var isAIFilter: Bool { filterThemeID == Self.aiFilterID }
+
+    /// Проходит ли заметка фильтр полосы тем (без фильтра — любая).
+    func passesFilter(themeID: UUID?, isForAI: Bool) -> Bool {
+        guard let filter = filterThemeID else { return true }
+        return filter == Self.aiFilterID ? isForAI : themeID == filter
+    }
+
     // Вкладки: nil = холст (или «Файлы»)
     var openTabs: [UUID] = []
     var activeTab: UUID?
@@ -106,6 +116,7 @@ final class Workspace {
         if node.shape == .sticker { node.fillIndex = 3 }
         context.insert(node)
         node.theme = theme ?? filterThemeID.flatMap { self.theme($0) }
+        if isAIFilter { node.isForAI = true }
         node.addBlock(.text, context: context)
         select(.node(node.id))
         if editTitle { editingTitleID = node.id }

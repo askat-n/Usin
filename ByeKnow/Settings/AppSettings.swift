@@ -120,6 +120,7 @@ func tr(_ russian: String) -> String {
 private let englishStrings: [String: String] = [
     // Экспорт для ИИ
     "Для ИИ": "For AI",
+    "Заметки, которые видят ИИ-ассистенты": "Notes AI assistants can see",
     "ИИ-ассистенты видят эту заметку. Нажми, чтобы сделать её личной": "AI assistants can see this note. Click to make it private",
     "Личная заметка. Нажми, чтобы открыть её ИИ-ассистентам": "Private note. Click to share it with AI assistants",
     "Скрыть от ИИ": "Hide from AI",

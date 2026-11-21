@@ -302,8 +302,8 @@ struct CanvasView: View {
     // MARK: - Nodes
 
     private func isDimmed(_ node: Node) -> Bool {
-        guard let filter = ws.filterThemeID, !node.isRoot else { return false }
-        return node.theme?.id != filter
+        guard ws.filterThemeID != nil, !node.isRoot else { return false }
+        return !ws.passesFilter(themeID: node.theme?.id, isForAI: node.isForAI)
     }
 
     /// Заметка под курсором и её соседи по стрелкам (nil — курсор ни на чём).
