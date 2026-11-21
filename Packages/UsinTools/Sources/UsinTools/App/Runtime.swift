@@ -26,21 +26,23 @@ public enum ToolsRuntime {
     public static let state = State()
     private static let menuBar = MenuBarController()
     private static var menuBarWanted = false
-    private static var terminationObserver: NSObjectProtocol?
+    private static var runningAppsObservation: NSKeyValueObservation?
 
-    static let singluseBundleID = "com.askatbek.singluse"
+    nonisolated static let singluseBundleID = "com.askatbek.singluse"
 
     /// Вызывается один раз при запуске Usin.
     public static func start() {
         SingluseImport.runIfNeeded()
         if isSingluseRunning {
             state.waitingForSingluse = true
-            terminationObserver = NSWorkspace.shared.notificationCenter.addObserver(
-                forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
-            ) { note in
-                let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                guard app?.bundleIdentifier == singluseBundleID else { return }
-                MainActor.assumeIsolated { startModules() }
+            // Singluse живёт только в строке меню, а о закрытии таких приложений NSWorkspace
+            // уведомления не присылает. Поэтому следим за самим списком запущенных приложений.
+            runningAppsObservation = NSWorkspace.shared.observe(\.runningApplications) { _, _ in
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated {
+                        if !isSingluseRunning { startModules() }
+                    }
+                }
             }
         } else {
             startModules()
@@ -49,8 +51,8 @@ public enum ToolsRuntime {
 
     private static func startModules() {
         guard !state.isRunning else { return }
-        if let terminationObserver { NSWorkspace.shared.notificationCenter.removeObserver(terminationObserver) }
-        terminationObserver = nil
+        runningAppsObservation?.invalidate()
+        runningAppsObservation = nil
         state.waitingForSingluse = false
         state.isRunning = true
         Coordinator.shared.start()
