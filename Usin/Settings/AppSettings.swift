@@ -1,10 +1,53 @@
 import SwiftUI
 
+/// Язык интерфейса — один на всё приложение: холст, заметки, настройки и инструменты Mac.
 enum AppLanguage: String, CaseIterable, Identifiable {
-    case ru, en
+    case ru, en, es
+    case zhHans = "zh-Hans"
+    case ar, fr, vi, ko, tl
 
     var id: String { rawValue }
-    var title: String { self == .ru ? "Русский" : "English" }
+
+    /// Название на самом языке: человек должен найти свой, не зная текущего.
+    var title: String {
+        switch self {
+        case .ru: "Русский"
+        case .en: "English"
+        case .es: "Español"
+        case .zhHans: "简体中文"
+        case .ar: "العربية"
+        case .fr: "Français"
+        case .vi: "Tiếng Việt"
+        case .ko: "한국어"
+        case .tl: "Tagalog"
+        }
+    }
+
+    var locale: Locale { Locale(identifier: rawValue) }
+
+    /// Арабский читается справа налево — окно настроек зеркалится вместе с ним. Холст не зеркалится.
+    var layoutDirection: LayoutDirection { self == .ar ? .rightToLeft : .leftToRight }
+
+    /// Переводы этого языка: `<язык>.lproj` в приложении (собирает `Localization/make-strings.py`).
+    var bundle: Bundle { Self.bundles[self] ?? .main }
+
+    private static let bundles: [AppLanguage: Bundle] = Dictionary(uniqueKeysWithValues: allCases.map { language in
+        (language, Bundle.main.path(forResource: language.rawValue, ofType: "lproj").flatMap(Bundle.init(path:)) ?? .main)
+    })
+
+    /// Первый язык системы, который знает Usin; если ни одного — английский.
+    static var system: AppLanguage {
+        for identifier in Locale.preferredLanguages {
+            let language = Locale.Language(identifier: identifier)
+            switch language.languageCode?.identifier {
+            case "zh": return .zhHans
+            case "fil": return .tl
+            case let code?: if let known = AppLanguage(rawValue: code) { return known }
+            case nil: continue
+            }
+        }
+        return .en
+    }
 }
 
 enum AppAppearance: String, CaseIterable, Identifiable {
@@ -14,9 +57,9 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .system: tr("Системное")
-        case .light: tr("Светлое")
-        case .dark: tr("Тёмное")
+        case .system: L("Системное")
+        case .light: L("Светлое")
+        case .dark: L("Тёмное")
         }
     }
 
@@ -36,9 +79,9 @@ enum CanvasStyle: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .cosmos: tr("Космос")
-        case .terminal: tr("Терминал")
-        case .classic: tr("Классический")
+        case .cosmos: L("Космос")
+        case .terminal: L("Терминал")
+        case .classic: L("Классический")
         }
     }
 
@@ -58,8 +101,15 @@ final class AppSettings {
     private let defaults = UserDefaults.standard
 
     var language: AppLanguage {
-        didSet { defaults.set(language.rawValue, forKey: "settings.language") }
+        didSet {
+            defaults.set(language.rawValue, forKey: Self.languageKey)
+            // Системные меню, окна выбора файла и даты — на том же языке со следующего запуска.
+            defaults.set([language.rawValue], forKey: "AppleLanguages")
+        }
     }
+
+    /// Его же читают инструменты Mac (`ToolsLanguage`).
+    static let languageKey = "settings.language"
 
     var appearance: AppAppearance {
         didSet { defaults.set(appearance.rawValue, forKey: "settings.appearance") }
@@ -101,9 +151,14 @@ final class AppSettings {
     var effectiveColorScheme: ColorScheme? { canvasStyle.isDark ? .dark : appearance.colorScheme }
 
     private init() {
-        let systemIsRussian = Locale.preferredLanguages.first?.hasPrefix("ru") ?? true
-        language = AppLanguage(rawValue: defaults.string(forKey: "settings.language") ?? "")
-            ?? (systemIsRussian ? .ru : .en)
+        if let saved = AppLanguage(rawValue: defaults.string(forKey: Self.languageKey) ?? "") {
+            language = saved
+        } else {
+            // Запоминаем сразу: инструменты Mac читают язык из настроек и должны говорить на том же.
+            let detected = AppLanguage.system
+            language = detected
+            defaults.set(detected.rawValue, forKey: Self.languageKey)
+        }
         appearance = AppAppearance(rawValue: defaults.string(forKey: "settings.appearance") ?? "") ?? .system
         let hold = defaults.double(forKey: "settings.holdDuration")
         holdDuration = hold > 0 ? hold : 1.25
@@ -115,259 +170,8 @@ final class AppSettings {
     }
 }
 
-/// Перевод строки интерфейса. Текст в коде — по-русски, английский берётся из словаря.
-func tr(_ russian: String) -> String {
-    AppSettings.shared.language == .en ? (englishStrings[russian] ?? russian) : russian
+/// Перевод строки интерфейса. Ключ — русский текст, переводы — `Localization/app` (таблица App).
+/// Язык читается из настроек, поэтому экран перерисовывается сразу, как только его сменили.
+func L(_ key: String) -> String {
+    AppSettings.shared.language.bundle.localizedString(forKey: key, value: key, table: "App")
 }
-
-private let englishStrings: [String: String] = [
-    // Экспорт для ИИ
-    "Для ИИ": "For AI",
-    "Заметки, которые видят ИИ-ассистенты": "Notes AI assistants can see",
-    "ИИ-ассистенты видят эту заметку. Нажми, чтобы сделать её личной": "AI assistants can see this note. Click to make it private",
-    "Личная заметка. Нажми, чтобы открыть её ИИ-ассистентам": "Private note. Click to share it with AI assistants",
-    "Скрыть от ИИ": "Hide from AI",
-    "Открыть для ИИ": "Share with AI",
-    "Видна ИИ — нажми, чтобы скрыть": "Visible to AI — click to hide",
-    "Видна ИИ": "Visible to AI",
-    "Память ИИ": "AI memory",
-    "Здесь то, что видят ИИ-ассистенты. Отметь заметку «Для ИИ» — она появится здесь.": "This is what AI assistants can see. Mark a note “For AI” and it shows up here.",
-    "ИИ-ассистенты": "AI assistants",
-    "Заметки в папке Markdown": "Notes in a Markdown folder",
-    "Папка": "Folder",
-    "Другая папка…": "Change folder…",
-    "Показать в Finder": "Show in Finder",
-    "Ошибка экспорта": "Export error",
-    "Обновлено": "Updated",
-    "Выбрать": "Choose",
-    "Нет доступа к папке — выбери её снова": "No access to the folder — choose it again",
-    "Не удалось запомнить папку": "Couldn't remember the folder",
-    "Папка для заметок в Markdown": "Folder for Markdown notes",
-    "В папке — копия заметок с отметкой «Для ИИ» (✦): по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Остальные заметки остаются личными и в папку не попадают. Её читают ИИ-ассистенты через MCP-сервер Usin. Записи ИИ из подпапки inbox Usin применяет сам.": "The folder holds a copy of notes marked “For AI” (✦): one .md file per note, subfolders for themes, arrows as [[links]]. All other notes stay private and never reach the folder. AI assistants read it through the Usin MCP server. Usin applies AI writes from the inbox subfolder itself.",
-
-    // Цвета
-    "Обычный": "Default",
-    "Красный": "Red",
-    "Оранжевый": "Orange",
-    "Жёлтый": "Yellow",
-    "Зелёный": "Green",
-    "Бирюзовый": "Teal",
-    "Синий": "Blue",
-    "Фиолетовый": "Purple",
-    "Розовый": "Pink",
-
-    // Меню и вкладки
-    "Новая заметка": "New note",
-    "Новая заметка во вкладке": "New note in tab",
-    "Новая заметка во вкладке (⌘T)": "New note in tab (⌘T)",
-    "Холст": "Canvas",
-    "Все заметки…": "All notes…",
-    "Все заметки": "All notes",
-    "Все заметки (⌘K)": "All notes (⌘K)",
-    "К сфере Usin": "Back to the Usin sphere",
-    "Приблизить": "Zoom in",
-    "Отдалить": "Zoom out",
-    "Удалить выбранное": "Delete selection",
-    "Вкладки": "Tabs",
-    "Вкладка": "Tab",
-    "Следующая вкладка": "Next tab",
-    "Предыдущая вкладка": "Previous tab",
-    "Закрыть вкладку": "Close tab",
-
-    // Фигуры, блоки, стрелки
-    "Карточка": "Card",
-    "Круг": "Circle",
-    "Квадрат": "Square",
-    "Стикер": "Sticker",
-    "Текст": "Text",
-    "Заголовок": "Heading",
-    "Чек-лист": "Checklist",
-    "Картинка": "Image",
-    "Ссылка": "Link",
-    "Разделитель": "Divider",
-    "Прямая": "Straight",
-    "Изогнутая": "Curved",
-    "Стрелка": "Arrow",
-    "Точка": "Dot",
-    "Без наконечника": "No arrowhead",
-
-    // Холст
-    "Пока нет заметок": "No notes yet",
-    "Удержи палец на пустом месте холста, чтобы создать первую": "Hold your finger on an empty spot of the canvas to create one",
-    "Поиск по заметкам": "Search notes",
-    "Готово": "Done",
-    "Тяни к другой фигуре — стрелка. Нажми — новая связанная заметка": "Drag to another shape to draw an arrow. Tap for a new linked note",
-    "Тяни, чтобы изогнуть. Двойной тап — выпрямить": "Drag to bend. Double-tap to straighten",
-    "Удержи палец на пустом месте — появится заметка": "Hold your finger on an empty spot to create a note",
-
-    // Заметка
-    "Название": "Title",
-    "На холсте": "On canvas",
-    "Удалить заметку": "Delete note",
-    "Пиши… или «/» для блоков": "Write… or type “/” for blocks",
-    "Пункт": "Item",
-    "Нажми — меню. Потяни — переставить строку": "Tap for menu. Drag to move the line",
-    "Картинку нельзя превратить в другой блок — иначе она пропадёт": "An image can't become another block — it would be lost",
-    "Картинка и разделитель недоступны: в строке есть текст": "Image and divider are unavailable: this line has text",
-    "Превратить в": "Turn into",
-    "Добавить строку ниже": "Add line below",
-    "Удалить": "Delete",
-    "Заменить из Фото": "Replace from Photos",
-    "Из Фото": "From Photos",
-    "Из файла": "From file",
-    "или перетащи картинку сюда": "or drag an image here",
-    "Открыть": "Open",
-    "Открыть ссылку": "Open link",
-
-    // Темы и панель
-    "Без темы": "No theme",
-    "Новая тема…": "New theme…",
-    "Новая тема": "New theme",
-    "Тема": "Theme",
-    "Создать": "Create",
-    "Отмена": "Cancel",
-    "Все": "All",
-    "Переименовать": "Rename",
-    "Переименовать тему": "Rename theme",
-    "Цвет": "Color",
-    "Удалить тему": "Delete theme",
-    "Цвет фигуры": "Shape color",
-    "Цвет текста": "Text color",
-    "Открыть во вкладке": "Open in tab",
-    "Пунктир": "Dashed",
-    "Цвет стрелки": "Arrow color",
-    "Развернуть": "Reverse",
-
-    // Настройки
-    "Настройки": "Settings",
-    "Язык": "Language",
-    "Оформление": "Appearance",
-    "Тема оформления": "Theme",
-    "Системное": "System",
-    "Светлое": "Light",
-    "Тёмное": "Dark",
-    "Удержание для новой заметки": "Hold to create a note",
-    "с": "s",
-    "Форма новой заметки": "New note shape",
-    "Сетка из точек": "Dot grid",
-    "О приложении": "About",
-    "Версия": "Version",
-
-    // Синхронизация
-    "Синхронизация": "Sync",
-    "Подключить Google Drive": "Connect Google Drive",
-    "Подключение…": "Connecting…",
-    "Синхронизация…": "Syncing…",
-    "Синхронизировать сейчас": "Sync now",
-    "Отключить Google Drive": "Disconnect Google Drive",
-    "Последняя синхронизация": "Last sync",
-    "Ещё не синхронизировалось": "Not synced yet",
-    "Подключено": "Connected",
-    "Ошибка синхронизации": "Sync error",
-    "Заметки хранятся в скрытой папке приложения на твоём Google Drive и одинаковы на iPhone, iPad и Mac. Если переустановить приложение, просто подключи Drive снова — всё вернётся.":
-        "Notes are kept in a hidden app folder on your Google Drive and stay the same on iPhone, iPad and Mac. If you reinstall the app, just connect Drive again and everything comes back.",
-    "На Google Drive найдены заметки": "Notes found on Google Drive",
-    "На этом устройстве тоже есть заметки. Если подключить Google Drive, всё, что сейчас на этом устройстве, сотрётся и заменится заметками с Google Drive. Согласен?":
-        "This device has notes too. If you connect Google Drive, everything on this device will be erased and replaced with the notes from Google Drive. Do you agree?",
-    "Да, стереть и подключить": "Yes, erase and connect",
-    "Нет": "No",
-    "Войди в Google ещё раз": "Sign in to Google again",
-    "Нет интернета или Google не отвечает": "No internet or Google is not responding",
-    "Google не выдал постоянный доступ — подключи Google Drive ещё раз": "Google didn't grant lasting access — connect Google Drive again",
-    "Google Drive не подключён": "Google Drive is not connected",
-    "Все изменения сохранены в Google Drive": "All changes saved to Google Drive",
-    "Сохранение…": "Saving…",
-    "Не удалось сохранить в Google Drive": "Couldn't save to Google Drive",
-    "Войди в Google в открывшемся окне браузера — потом приложение подключится само.":
-        "Sign in to Google in the browser window that opened — the app will connect by itself afterwards.",
-
-    // Корзина, помощь, меню
-    "Корзина": "Trash",
-    "Корзина пуста": "Trash is empty",
-    "Удалённые заметки хранятся здесь 30 дней.": "Deleted notes are kept here for 30 days.",
-    "Заметки удаляются навсегда через 30 дней после попадания в корзину.": "Notes are deleted forever 30 days after they go to the trash.",
-    "Очистить": "Empty",
-    "Очистить корзину?": "Empty the trash?",
-    "Удалить все навсегда": "Delete all forever",
-    "Заметки из корзины удалятся на всех устройствах. Это нельзя отменить.": "Notes in the trash will be deleted on all devices. This can't be undone.",
-    "Удалить навсегда?": "Delete forever?",
-    "Удалить навсегда": "Delete forever",
-    "Это нельзя отменить.": "This can't be undone.",
-    "Восстановить": "Restore",
-    "Осталось дней": "Days left",
-    "Заметка в корзине": "Note moved to trash",
-    "Отменить": "Undo",
-    "Как пользоваться": "How to use",
-    "Открыть выбранную заметку": "Open selected note",
-    "Дублировать": "Duplicate",
-    "Вернуть закрытую вкладку": "Reopen closed tab",
-    "Переместить в корзину": "Move to trash",
-    "Найти…": "Find…",
-    "Космос": "Cosmos",
-    "Классический": "Classic",
-    "Стиль холста": "Canvas style",
-    "В стиле «Космос» оформление всегда тёмное.": "The Cosmos style is always dark.",
-    "Анимация": "Animation",
-    "Терминал": "Terminal",
-    "Тёмные стили всегда в тёмном оформлении.": "Dark styles are always in dark appearance.",
-    "Без анимации холст не тратит батарею.": "Without animation the canvas doesn't use battery.",
-    "Живой граф": "Living graph",
-    "Заметки плавают и пружинят, как граф: потяни заметку — соседи по стрелкам потянутся за ней.":
-        "Notes float and bounce like a graph: drag a note and its linked neighbors follow.",
-
-    // Файлы и боковая панель
-    "Файлы": "Files",
-    "Заметки": "Notes",
-    "Боковая панель": "Sidebar",
-    "Показать или скрыть боковую панель (⌃⌘S)": "Show or hide the sidebar (⌃⌘S)",
-    "Заметки как файлы": "Notes as files",
-    "Показать на холсте": "Show on canvas",
-    "Свернуть все": "Collapse all",
-    "Изменено": "Modified",
-    "заметок": "notes",
-    // Обновления
-    "Обновления": "Updates",
-    "Проверять автоматически": "Check automatically",
-    "Проверить обновления": "Check for Updates",
-    "Последняя проверка: %@": "Last checked: %@",
-    "Раз в день Usin смотрит, нет ли новой версии на GitHub, и предлагает её установить. Заметки и настройки при обновлении сохраняются.": "Once a day Usin checks GitHub for a new version and offers to install it. Notes and settings are kept.",
-    "Обновление Usin": "Usin Update",
-    "У тебя последняя версия": "You’re up to date",
-    "Usin %@ — самая новая версия.": "Usin %@ is the latest version.",
-    "Не получается заменить приложение на месте. Перенеси Usin в папку «Программы» и попробуй снова или скачай новую версию со страницы релиза.": "Usin can’t replace itself here. Move it to the Applications folder and try again, or download the new version from the release page.",
-    "Не удалось скачать обновление. Проверь подключение к интернету.": "Couldn’t download the update. Check your internet connection.",
-    "Не удалось проверить обновления. Проверь подключение к интернету.": "Couldn’t check for updates. Check your internet connection.",
-    "Не удалось установить обновление. Скачай новую версию со страницы релиза.": "Couldn’t install the update. Download the new version from the release page.",
-    "Скачанный файл не прошёл проверку подписи, поэтому он не установлен.": "The downloaded file failed the signature check, so it wasn’t installed.",
-    "Доступна новая версия Usin": "A new version of Usin is available",
-    "Загрузка обновления…": "Downloading update…",
-    "Установка…": "Installing…",
-    "Обновление не удалось": "Update failed",
-    "Проверка обновлений…": "Checking for updates…",
-    "Версия %@ готова к установке. У тебя %@.": "Version %@ is ready to install. You have %@.",
-    "Usin перезапустится сам, когда всё будет готово.": "Usin will restart by itself when everything is ready.",
-    "Пропустить эту версию": "Skip This Version",
-    "Позже": "Later",
-    "Установить": "Install",
-    "Открыть страницу релиза": "Open Release Page",
-    "Закрыть": "Close",
-    // Окно настроек
-    "Основные": "General",
-    "Справка": "Help",
-    "Нужно действие": "Needs attention",
-    "Приложение": "App",
-    "Запускать при входе в систему": "Open at login",
-    "Нужно разрешить в Системных настройках": "Needs approval in System Settings",
-    "Значок в Dock": "Show in Dock",
-    "Значок в строке меню": "Show in menu bar",
-    "Из строки меню — новая заметка, цифры Mac, настройки и обновления.": "From the menu bar: a new note, Mac stats, settings and updates.",
-    "Инструменты Mac": "Mac tools",
-    "Сервисы": "Services",
-    "Без значка в Dock Usin открывается из значка в строке меню.": "Without the Dock icon, open Usin from its menu bar icon.",
-    "Тёмные стили холста всегда в тёмном оформлении. Стиль холста — в разделе «Заметки».": "Dark canvas styles always use dark mode. The canvas style is in Notes.",
-    "Открыть Usin": "Open Usin",
-    "Выйти из Usin": "Quit Usin",
-    "Проверить сейчас": "Check Now",
-    "Версия %@": "Version %@",
-    "Ещё не проверялось": "Not checked yet",
-]

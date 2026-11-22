@@ -48,7 +48,7 @@ final class NoteExporter {
             start()
         } else if isEnabled {
             isEnabled = false
-            errorMessage = tr("Нет доступа к папке — выбери её снова")
+            errorMessage = L("Нет доступа к папке — выбери её снова")
         }
     }
 
@@ -72,14 +72,14 @@ final class NoteExporter {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = tr("Выбрать")
-        panel.message = tr("Папка для заметок в Markdown")
+        panel.prompt = L("Выбрать")
+        panel.message = L("Папка для заметок в Markdown")
         guard panel.runModal() == .OK, let url = panel.url else { return false }
         do {
             let data = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
             UserDefaults.standard.set(data, forKey: Self.bookmarkKey)
         } catch {
-            errorMessage = tr("Не удалось запомнить папку") + ": " + error.localizedDescription
+            errorMessage = L("Не удалось запомнить папку") + ": " + error.localizedDescription
             return false
         }
         folderURL?.stopAccessingSecurityScopedResource()
@@ -172,7 +172,7 @@ final class NoteExporter {
         var folders: [UUID: String] = [:]
         let themes = try context.fetch(FetchDescriptor<Theme>()).sorted { ($0.order, $0.name) < ($1.order, $1.name) }
         for theme in themes {
-            folders[theme.id] = Self.unique(Self.sanitize(theme.name.isEmpty ? tr("Тема") : theme.name), in: &usedFolders)
+            folders[theme.id] = Self.unique(Self.sanitize(theme.name.isEmpty ? L("Тема") : theme.name), in: &usedFolders)
         }
 
         var outgoing: [UUID: [UUID]] = [:]
@@ -585,7 +585,7 @@ final class NoteExporter {
             .split(whereSeparator: \.isWhitespace).joined(separator: " ")
         while s.hasPrefix(".") { s.removeFirst() }
         if s.count > 100 { s = String(s.prefix(100)).trimmingCharacters(in: .whitespaces) }
-        return s.isEmpty ? tr("Новая заметка") : s
+        return s.isEmpty ? L("Новая заметка") : s
     }
 
     private static func unique(_ base: String, in used: inout Set<String>) -> String {

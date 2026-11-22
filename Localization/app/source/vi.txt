@@ -1,0 +1,238 @@
+Cho AI
+Ghi chú mà trợ lý AI xem được
+Trợ lý AI xem được ghi chú này. Bấm để chuyển thành riêng tư
+Ghi chú riêng tư. Bấm để chia sẻ với trợ lý AI
+Ẩn khỏi AI
+Chia sẻ với AI
+AI xem được — bấm để ẩn
+AI xem được
+Bộ nhớ AI
+Đây là những gì trợ lý AI xem được. Đánh dấu ghi chú “Cho AI” và nó sẽ hiện ở đây.
+Trợ lý AI
+Ghi chú trong thư mục Markdown
+Thư mục
+Đổi thư mục…
+Hiện trong Finder
+Lỗi xuất
+Đã cập nhật
+Chọn
+Không truy cập được thư mục — hãy chọn lại
+Không thể ghi nhớ thư mục
+Thư mục cho ghi chú Markdown
+Thư mục chứa bản sao các ghi chú được đánh dấu “Cho AI” (✦): mỗi ghi chú một tệp .md, thư mục con cho chủ đề, mũi tên thành [[liên kết]]. Các ghi chú khác vẫn riêng tư và không bao giờ vào thư mục. Trợ lý AI đọc thư mục qua máy chủ MCP của Usin. Usin tự áp dụng những gì AI ghi vào thư mục con inbox.
+Mặc định
+Đỏ
+Cam
+Vàng
+Xanh lá
+Xanh ngọc
+Xanh dương
+Tím
+Hồng
+Ghi chú mới
+Ghi chú mới trong tab
+Ghi chú mới trong tab (⌘T)
+Khung vẽ
+Tất cả ghi chú…
+Tất cả ghi chú
+Tất cả ghi chú (⌘K)
+Về quả cầu Usin
+Phóng to
+Thu nhỏ
+Tab
+Tab
+Tab tiếp theo
+Tab trước
+Đóng tab
+Thẻ
+Hình tròn
+Hình vuông
+Giấy dán
+Văn bản
+Tiêu đề
+Danh sách việc
+Hình ảnh
+Liên kết
+Đường phân cách
+Thẳng
+Cong
+Mũi tên
+Chấm
+Không đầu mũi tên
+Chưa có ghi chú
+Giữ ngón tay trên chỗ trống của khung vẽ để tạo ghi chú đầu tiên
+Tìm trong ghi chú
+Xong
+Kéo đến hình khác để vẽ mũi tên. Chạm để tạo ghi chú liên kết mới
+Kéo để uốn cong. Chạm hai lần để làm thẳng
+Giữ ngón tay trên chỗ trống để tạo ghi chú
+Tiêu đề
+Trên khung vẽ
+Xóa ghi chú
+Viết… hoặc gõ “/” để chèn khối
+Mục
+Chạm để mở menu. Kéo để di chuyển dòng
+Hình ảnh không thể chuyển thành khối khác — nó sẽ bị mất
+Không dùng được hình ảnh và đường phân cách: dòng đang có chữ
+Chuyển thành
+Thêm dòng bên dưới
+Xóa
+Thay bằng ảnh từ Ảnh
+Từ Ảnh
+Từ tệp
+hoặc kéo hình ảnh vào đây
+Mở
+Mở liên kết
+Không có chủ đề
+Chủ đề mới…
+Chủ đề mới
+Chủ đề
+Tạo
+Hủy
+Tất cả
+Đổi tên
+Đổi tên chủ đề
+Màu
+Xóa chủ đề
+Màu hình
+Màu chữ
+Mở trong tab
+Nét đứt
+Màu mũi tên
+Đảo chiều
+Cài đặt
+Ngôn ngữ
+Giao diện
+Chủ đề giao diện
+Hệ thống
+Sáng
+Tối
+Thời gian giữ để tạo ghi chú
+giây
+Hình dạng ghi chú mới
+Lưới chấm
+Phiên bản
+Đồng bộ
+Kết nối Google Drive
+Đang kết nối…
+Đang đồng bộ…
+Đồng bộ ngay
+Ngắt kết nối Google Drive
+Lần đồng bộ cuối
+Chưa đồng bộ
+Lỗi đồng bộ
+Ghi chú được lưu trong thư mục ẩn của ứng dụng trên Google Drive của bạn và giống nhau trên iPhone, iPad và Mac. Nếu cài lại ứng dụng, chỉ cần kết nối lại Drive là mọi thứ sẽ trở lại.
+Đã tìm thấy ghi chú trên Google Drive
+Thiết bị này cũng có ghi chú. Nếu kết nối Google Drive, mọi thứ hiện có trên thiết bị này sẽ bị xóa và thay bằng ghi chú từ Google Drive. Bạn đồng ý chứ?
+Có, xóa và kết nối
+Không
+Hãy đăng nhập Google lại
+Không có internet hoặc Google không phản hồi
+Google không cấp quyền truy cập lâu dài — hãy kết nối lại Google Drive
+Chưa kết nối Google Drive
+Mọi thay đổi đã được lưu vào Google Drive
+Đang lưu…
+Không thể lưu vào Google Drive
+Hãy đăng nhập Google trong cửa sổ trình duyệt vừa mở — sau đó ứng dụng sẽ tự kết nối.
+Thùng rác
+Thùng rác trống
+Ghi chú đã xóa được giữ ở đây 30 ngày.
+Ghi chú bị xóa vĩnh viễn 30 ngày sau khi vào thùng rác.
+Dọn sạch
+Dọn sạch thùng rác?
+Xóa vĩnh viễn tất cả
+Ghi chú trong thùng rác sẽ bị xóa trên mọi thiết bị. Không thể hoàn tác.
+Xóa vĩnh viễn?
+Xóa vĩnh viễn
+Không thể hoàn tác.
+Khôi phục
+Số ngày còn lại
+Ghi chú đã vào thùng rác
+Hoàn tác
+Cách sử dụng
+Mở ghi chú đã chọn
+Nhân bản
+Mở lại tab đã đóng
+Chuyển vào thùng rác
+Tìm…
+Vũ trụ
+Cổ điển
+Kiểu khung vẽ
+Hiệu ứng động
+Terminal
+Các kiểu tối luôn dùng giao diện tối.
+Khi tắt hiệu ứng động, khung vẽ không tốn pin.
+Đồ thị sống
+Ghi chú trôi và nảy như một đồ thị: kéo một ghi chú, các ghi chú nối bằng mũi tên sẽ đi theo.
+Tệp
+Ghi chú
+Thanh bên
+Hiện hoặc ẩn thanh bên (⌃⌘S)
+Ghi chú dạng tệp
+Hiện trên khung vẽ
+Thu gọn tất cả
+Cập nhật
+Tự động kiểm tra
+Kiểm tra cập nhật
+Lần kiểm tra cuối: %@
+Mỗi ngày một lần Usin kiểm tra phiên bản mới trên GitHub và đề nghị cài đặt. Ghi chú và cài đặt được giữ nguyên khi cập nhật.
+Cập nhật Usin
+Bạn đang dùng phiên bản mới nhất
+Usin %@ là phiên bản mới nhất.
+Usin không thể tự thay thế tại đây. Hãy chuyển Usin vào thư mục Ứng dụng rồi thử lại, hoặc tải phiên bản mới từ trang phát hành.
+Không thể tải bản cập nhật. Hãy kiểm tra kết nối internet.
+Không thể kiểm tra cập nhật. Hãy kiểm tra kết nối internet.
+Không thể cài bản cập nhật. Hãy tải phiên bản mới từ trang phát hành.
+Tệp đã tải không vượt qua kiểm tra chữ ký nên chưa được cài đặt.
+Đã có phiên bản Usin mới
+Đang tải bản cập nhật…
+Đang cài đặt…
+Cập nhật thất bại
+Đang kiểm tra cập nhật…
+Phiên bản %@ đã sẵn sàng để cài. Bạn đang dùng %@.
+Usin sẽ tự khởi động lại khi mọi thứ sẵn sàng.
+Bỏ qua phiên bản này
+Để sau
+Cài đặt
+Mở trang phát hành
+Đóng
+Chung
+Trợ giúp
+Cần xử lý
+Ứng dụng
+Mở khi đăng nhập
+Cần cho phép trong Cài đặt hệ thống
+Hiện trên Dock
+Hiện trên thanh menu
+Từ thanh menu: ghi chú mới, thông số Mac, cài đặt và cập nhật.
+Công cụ Mac
+Dịch vụ
+Khi không có biểu tượng trên Dock, hãy mở Usin từ biểu tượng trên thanh menu.
+Các kiểu khung vẽ tối luôn dùng chế độ tối. Kiểu khung vẽ nằm trong mục Ghi chú.
+Kiểm tra ngay
+Phiên bản %@
+Chưa kiểm tra
+Usin là ghi chú trên một khung vẽ vô hạn. Quả cầu Usin nằm ở giữa, và bạn xây dựng sơ đồ của mình quanh nó: ghi chú, mũi tên, chủ đề.
+Giữ ngón tay (hoặc chuột) trên chỗ trống để tạo ghi chú
+Kéo chỗ trống để di chuyển khung vẽ. Chụm ngón tay hoặc ⌘ + cuộn để thu phóng
+Nút ◎ bên phải đưa bạn về quả cầu Usin
+Cài đặt → Giao diện: “Vũ trụ” (không gian sống động), “Terminal” (như màn hình máy tính) hoặc “Cổ điển”. Có thể tắt hiệu ứng động
+Ghi chú và mũi tên
+Chạm vào ghi chú để chọn. Thanh bên dưới có hình dạng, màu, màu chữ, chủ đề, xóa
+Chạm hai lần vào ghi chú để mở nó trong tab ở trên cùng
+Dấu “+” màu xanh cạnh ghi chú: kéo đến ghi chú khác để tạo mũi tên; chạm để tạo ghi chú liên kết mới
+Chạm vào mũi tên và kéo điểm giữa để uốn cong
+Bên trong ghi chú
+Gõ “/” ở dòng trống để mở menu: tiêu đề, danh sách việc, hình ảnh, liên kết, đường phân cách
+Enter tạo dòng mới. Trong danh sách việc, Enter ở mục trống sẽ thoát danh sách
+≡ bên trái dòng: chạm để mở menu, kéo để di chuyển dòng
+Chủ đề, đồng bộ, thùng rác
+Chủ đề ở trên khung vẽ: chạm vào một chủ đề để chỉ xem ghi chú của nó
+Đám mây ở trên: dấu tích nghĩa là mọi thứ đã lưu vào Google Drive, nhấp nháy nghĩa là đang lưu
+Ghi chú đã xóa nằm trong thùng rác 30 ngày (Cài đặt → Thùng rác). Ngay sau khi xóa, bạn có thể chạm “Hoàn tác”
+Phím tắt (Mac và iPad có bàn phím)
+Nhân bản ghi chú
+Làm lại
+Các tab theo thứ tự
+Tab tiếp theo / trước
+Phóng to / thu nhỏ

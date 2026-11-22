@@ -1,0 +1,238 @@
+Pour l'IA
+Notes visibles par les assistants IA
+Les assistants IA voient cette note. Cliquez pour la rendre privée
+Note privée. Cliquez pour la partager avec les assistants IA
+Masquer à l'IA
+Partager avec l'IA
+Visible par l'IA — cliquez pour masquer
+Visible par l'IA
+Mémoire de l'IA
+Voici ce que voient les assistants IA. Marquez une note « Pour l'IA » et elle apparaîtra ici.
+Assistants IA
+Notes dans un dossier Markdown
+Dossier
+Changer de dossier…
+Afficher dans le Finder
+Erreur d'exportation
+Mis à jour
+Choisir
+Pas d'accès au dossier — choisissez-le à nouveau
+Impossible de mémoriser le dossier
+Dossier pour les notes Markdown
+Le dossier contient une copie des notes marquées « Pour l'IA » (✦) : un fichier .md par note, des sous-dossiers pour les thèmes, les flèches sous forme de [[liens]]. Les autres notes restent privées et n'arrivent jamais dans le dossier. Les assistants IA le lisent via le serveur MCP d'Usin. Usin applique lui-même ce que l'IA écrit dans le sous-dossier inbox.
+Par défaut
+Rouge
+Orange
+Jaune
+Vert
+Turquoise
+Bleu
+Violet
+Rose
+Nouvelle note
+Nouvelle note dans un onglet
+Nouvelle note dans un onglet (⌘T)
+Canevas
+Toutes les notes…
+Toutes les notes
+Toutes les notes (⌘K)
+Revenir à la sphère Usin
+Zoom avant
+Zoom arrière
+Onglets
+Onglet
+Onglet suivant
+Onglet précédent
+Fermer l'onglet
+Carte
+Cercle
+Carré
+Post-it
+Texte
+Titre
+Liste de tâches
+Image
+Lien
+Séparateur
+Droite
+Courbe
+Flèche
+Point
+Sans pointe
+Pas encore de notes
+Maintenez le doigt sur un espace vide du canevas pour créer la première
+Rechercher dans les notes
+OK
+Faites glisser vers une autre forme pour tracer une flèche. Touchez pour une nouvelle note liée
+Faites glisser pour courber. Touchez deux fois pour redresser
+Maintenez le doigt sur un espace vide pour créer une note
+Titre
+Sur le canevas
+Supprimer la note
+Écrivez… ou « / » pour les blocs
+Élément
+Touchez pour le menu. Faites glisser pour déplacer la ligne
+Une image ne peut pas devenir un autre bloc — elle serait perdue
+Image et séparateur indisponibles : la ligne contient du texte
+Transformer en
+Ajouter une ligne en dessous
+Supprimer
+Remplacer depuis Photos
+Depuis Photos
+Depuis un fichier
+ou faites glisser une image ici
+Ouvrir
+Ouvrir le lien
+Sans thème
+Nouveau thème…
+Nouveau thème
+Thème
+Créer
+Annuler
+Tout
+Renommer
+Renommer le thème
+Couleur
+Supprimer le thème
+Couleur de la forme
+Couleur du texte
+Ouvrir dans un onglet
+Pointillé
+Couleur de la flèche
+Inverser
+Réglages
+Langue
+Apparence
+Thème
+Système
+Clair
+Sombre
+Maintien pour créer une note
+s
+Forme des nouvelles notes
+Grille de points
+Version
+Synchronisation
+Connecter Google Drive
+Connexion…
+Synchronisation…
+Synchroniser maintenant
+Déconnecter Google Drive
+Dernière synchronisation
+Pas encore synchronisé
+Erreur de synchronisation
+Les notes sont conservées dans un dossier caché de l'app sur votre Google Drive et restent identiques sur iPhone, iPad et Mac. Si vous réinstallez l'app, reconnectez simplement Drive et tout reviendra.
+Notes trouvées sur Google Drive
+Cet appareil contient aussi des notes. Si vous connectez Google Drive, tout ce qui se trouve sur cet appareil sera effacé et remplacé par les notes de Google Drive. D'accord ?
+Oui, effacer et connecter
+Non
+Reconnectez-vous à Google
+Pas d'internet ou Google ne répond pas
+Google n'a pas accordé d'accès durable — reconnectez Google Drive
+Google Drive n'est pas connecté
+Toutes les modifications sont enregistrées dans Google Drive
+Enregistrement…
+Impossible d'enregistrer dans Google Drive
+Connectez-vous à Google dans la fenêtre du navigateur qui s'est ouverte — l'app se connectera ensuite toute seule.
+Corbeille
+La corbeille est vide
+Les notes supprimées sont conservées ici pendant 30 jours.
+Les notes sont supprimées définitivement 30 jours après leur mise à la corbeille.
+Vider
+Vider la corbeille ?
+Tout supprimer définitivement
+Les notes de la corbeille seront supprimées sur tous les appareils. Cette action est irréversible.
+Supprimer définitivement ?
+Supprimer définitivement
+Cette action est irréversible.
+Restaurer
+Jours restants
+Note placée dans la corbeille
+Annuler
+Mode d'emploi
+Ouvrir la note sélectionnée
+Dupliquer
+Rouvrir l'onglet fermé
+Placer dans la corbeille
+Rechercher…
+Cosmos
+Classique
+Style du canevas
+Animation
+Terminal
+Les styles sombres utilisent toujours l'apparence sombre.
+Sans animation, le canevas n'use pas la batterie.
+Graphe vivant
+Les notes flottent et rebondissent comme un graphe : faites glisser une note et ses voisines liées la suivent.
+Fichiers
+Notes
+Barre latérale
+Afficher ou masquer la barre latérale (⌃⌘S)
+Notes en fichiers
+Afficher sur le canevas
+Tout replier
+Mises à jour
+Vérifier automatiquement
+Rechercher des mises à jour
+Dernière vérification : %@
+Une fois par jour, Usin vérifie sur GitHub s'il existe une nouvelle version et propose de l'installer. Les notes et les réglages sont conservés.
+Mise à jour d'Usin
+Vous avez la dernière version
+Usin %@ est la version la plus récente.
+Usin ne peut pas se remplacer ici. Déplacez-le dans le dossier Applications et réessayez, ou téléchargez la nouvelle version depuis la page de publication.
+Impossible de télécharger la mise à jour. Vérifiez votre connexion internet.
+Impossible de rechercher des mises à jour. Vérifiez votre connexion internet.
+Impossible d'installer la mise à jour. Téléchargez la nouvelle version depuis la page de publication.
+Le fichier téléchargé n'a pas passé la vérification de signature et n'a donc pas été installé.
+Une nouvelle version d'Usin est disponible
+Téléchargement de la mise à jour…
+Installation…
+Échec de la mise à jour
+Recherche de mises à jour…
+La version %@ est prête à être installée. Vous avez la %@.
+Usin redémarrera tout seul quand tout sera prêt.
+Ignorer cette version
+Plus tard
+Installer
+Ouvrir la page de publication
+Fermer
+Général
+Aide
+Action requise
+App
+Ouvrir à l'ouverture de session
+À autoriser dans Réglages Système
+Afficher dans le Dock
+Afficher dans la barre des menus
+Depuis la barre des menus : une nouvelle note, les chiffres du Mac, les réglages et les mises à jour.
+Outils Mac
+Services
+Sans icône dans le Dock, ouvrez Usin depuis son icône dans la barre des menus.
+Les styles sombres du canevas utilisent toujours le mode sombre. Le style du canevas se trouve dans Notes.
+Vérifier maintenant
+Version %@
+Pas encore vérifié
+Usin, ce sont des notes sur un canevas infini. La sphère Usin est au centre, et vous construisez votre carte autour : notes, flèches, thèmes.
+Maintenez le doigt (ou la souris) sur un espace vide pour créer une note
+Faites glisser un espace vide pour déplacer le canevas. Pincez ou ⌘ + défilement pour zoomer
+Le bouton ◎ à droite vous ramène à la sphère Usin
+Réglages → Apparence : « Cosmos » (espace vivant), « Terminal » (comme un écran d'ordinateur) ou « Classique ». L'animation peut être désactivée
+Notes et flèches
+Touchez une note pour la sélectionner. La barre du bas propose forme, couleur, couleur du texte, thème, supprimer
+Touchez deux fois une note pour l'ouvrir dans un onglet en haut
+Le « + » bleu à côté d'une note : faites-le glisser vers une autre note pour une flèche ; touchez-le pour une nouvelle note liée
+Touchez une flèche et faites glisser son point central pour la courber
+Dans une note
+Tapez « / » sur une ligne vide pour un menu : titre, liste de tâches, image, lien, séparateur
+Entrée crée une nouvelle ligne. Dans une liste de tâches, Entrée sur un élément vide quitte la liste
+≡ à gauche d'une ligne : touchez pour le menu, faites glisser pour déplacer la ligne
+Thèmes, synchronisation, corbeille
+Thèmes en haut du canevas : touchez-en un pour n'afficher que ses notes
+Le nuage en haut : une coche signifie que tout est enregistré dans Google Drive ; s'il clignote, l'enregistrement est en cours
+Les notes supprimées restent 30 jours dans la corbeille (Réglages → Corbeille). Juste après la suppression, vous pouvez toucher « Annuler »
+Raccourcis clavier (Mac et iPad avec clavier)
+Dupliquer la note
+Rétablir
+Onglets dans l'ordre
+Onglet suivant / précédent
+Zoom avant / arrière

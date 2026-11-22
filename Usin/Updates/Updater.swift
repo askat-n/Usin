@@ -103,7 +103,7 @@ final class Updater {
                 if manual { showUpToDate() }
             }
         } catch {
-            state = manual ? .failed(tr("Не удалось проверить обновления. Проверь подключение к интернету.")) : .idle
+            state = manual ? .failed(L("Не удалось проверить обновления. Проверь подключение к интернету.")) : .idle
             if manual { showWindow() }
         }
     }
@@ -123,7 +123,7 @@ final class Updater {
                 backing: .buffered,
                 defer: false
             )
-            window.title = tr("Обновление Usin")
+            window.title = L("Обновление Usin")
             window.titlebarAppearsTransparent = true
             window.isReleasedWhenClosed = false
             window.contentViewController = NSHostingController(rootView: UpdateView(updater: self))
@@ -147,8 +147,8 @@ final class Updater {
 
     private func showUpToDate() {
         let alert = NSAlert()
-        alert.messageText = tr("У тебя последняя версия")
-        alert.informativeText = String(format: tr("Usin %@ — самая новая версия."), Self.currentVersion.description)
+        alert.messageText = L("У тебя последняя версия")
+        alert.informativeText = String(format: L("Usin %@ — самая новая версия."), Self.currentVersion.description)
         alert.icon = NSApp.applicationIconImage
         NSApp.activate()
         alert.runModal()
@@ -166,7 +166,7 @@ final class Updater {
         let bundle = Bundle.main.bundleURL
         guard !bundle.path.contains("/AppTranslocation/"),
               FileManager.default.isWritableFile(atPath: bundle.deletingLastPathComponent().path) else {
-            state = .failed(tr("Не получается заменить приложение на месте. Перенеси Usin в папку «Программы» и попробуй снова или скачай новую версию со страницы релиза."))
+            state = .failed(L("Не получается заменить приложение на месте. Перенеси Usin в папку «Программы» и попробуй снова или скачай новую версию со страницы релиза."))
             return
         }
         state = .downloading(0)
@@ -185,7 +185,7 @@ final class Updater {
                     self.download = nil
                     if cancelled { return }
                     if let kept { self.unpackAndInstall(kept, release: release) } else {
-                        self.state = .failed(tr("Не удалось скачать обновление. Проверь подключение к интернету."))
+                        self.state = .failed(L("Не удалось скачать обновление. Проверь подключение к интернету."))
                     }
                 }
             }
@@ -295,9 +295,9 @@ enum UpdateError: Error {
 
     var message: String {
         switch self {
-        case .badResponse: tr("Не удалось проверить обновления. Проверь подключение к интернету.")
-        case .unpack: tr("Не удалось установить обновление. Скачай новую версию со страницы релиза.")
-        case .wrongApp, .signature: tr("Скачанный файл не прошёл проверку подписи, поэтому он не установлен.")
+        case .badResponse: L("Не удалось проверить обновления. Проверь подключение к интернету.")
+        case .unpack: L("Не удалось установить обновление. Скачай новую версию со страницы релиза.")
+        case .wrongApp, .signature: L("Скачанный файл не прошёл проверку подписи, поэтому он не установлен.")
         }
     }
 }
@@ -391,20 +391,20 @@ private struct UpdateView: View {
 
     private var title: String {
         switch updater.state {
-        case .available: tr("Доступна новая версия Usin")
-        case .downloading: tr("Загрузка обновления…")
-        case .installing: tr("Установка…")
-        case .failed: tr("Обновление не удалось")
-        case .idle, .checking: tr("Проверка обновлений…")
+        case .available: L("Доступна новая версия Usin")
+        case .downloading: L("Загрузка обновления…")
+        case .installing: L("Установка…")
+        case .failed: L("Обновление не удалось")
+        case .idle, .checking: L("Проверка обновлений…")
         }
     }
 
     private var subtitle: String {
         switch updater.state {
         case .available(let release):
-            String(format: tr("Версия %@ готова к установке. У тебя %@."), release.version.description, Updater.currentVersion.description)
+            String(format: L("Версия %@ готова к установке. У тебя %@."), release.version.description, Updater.currentVersion.description)
         case .downloading, .installing:
-            tr("Usin перезапустится сам, когда всё будет готово.")
+            L("Usin перезапустится сам, когда всё будет готово.")
         case .failed(let message):
             message
         case .idle, .checking:
@@ -423,11 +423,11 @@ private struct UpdateView: View {
             }
             .background(RoundedRectangle(cornerRadius: 10).fill(.quaternary.opacity(0.5)))
             HStack {
-                Button(tr("Пропустить эту версию")) { updater.skip(release) }
+                Button(L("Пропустить эту версию")) { updater.skip(release) }
                 Spacer()
-                Button(tr("Позже")) { updater.closeWindow() }
+                Button(L("Позже")) { updater.closeWindow() }
                     .keyboardShortcut(.cancelAction)
-                Button(tr("Установить")) { updater.install(release) }
+                Button(L("Установить")) { updater.install(release) }
                     .keyboardShortcut(.defaultAction)
             }
         case .downloading(let progress):
@@ -435,7 +435,7 @@ private struct UpdateView: View {
             ProgressView(value: progress)
             HStack {
                 Spacer()
-                Button(tr("Отменить")) { updater.cancelDownload() }
+                Button(L("Отменить")) { updater.cancelDownload() }
             }
         case .installing, .checking, .idle:
             Spacer()
@@ -443,11 +443,11 @@ private struct UpdateView: View {
         case .failed:
             Spacer()
             HStack {
-                Button(tr("Открыть страницу релиза")) {
+                Button(L("Открыть страницу релиза")) {
                     NSWorkspace.shared.open(URL(string: "https://github.com/\(Updater.repository)/releases/latest")!)
                 }
                 Spacer()
-                Button(tr("Закрыть")) { updater.closeWindow() }
+                Button(L("Закрыть")) { updater.closeWindow() }
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -466,28 +466,28 @@ struct UpdatesSection: View {
 
     var body: some View {
         Section {
-            Toggle(tr("Проверять автоматически"), isOn: $updater.autoCheck)
+            Toggle(L("Проверять автоматически"), isOn: $updater.autoCheck)
             LabeledContent {
                 if case .checking = updater.state {
                     ProgressView().controlSize(.small)
                 } else {
-                    Button(tr("Проверить сейчас")) { Task { await updater.check(manual: true) } }
+                    Button(L("Проверить сейчас")) { Task { await updater.check(manual: true) } }
                         .disabled(updater.isBusy)
                 }
             } label: {
-                Text(String(format: tr("Версия %@"), Updater.currentVersion.description))
+                Text(String(format: L("Версия %@"), Updater.currentVersion.description))
                 Text(lastCheckText)
             }
         } header: {
-            Text(tr("Обновления"))
+            Text(L("Обновления"))
         } footer: {
-            Text(tr("Раз в день Usin смотрит, нет ли новой версии на GitHub, и предлагает её установить. Заметки и настройки при обновлении сохраняются."))
+            Text(L("Раз в день Usin смотрит, нет ли новой версии на GitHub, и предлагает её установить. Заметки и настройки при обновлении сохраняются."))
         }
     }
 
     private var lastCheckText: String {
-        guard let date = updater.lastCheck else { return tr("Ещё не проверялось") }
-        return String(format: tr("Последняя проверка: %@"), date.formatted(.relative(presentation: .named)))
+        guard let date = updater.lastCheck else { return L("Ещё не проверялось") }
+        return String(format: L("Последняя проверка: %@"), date.formatted(.relative(presentation: .named)))
     }
 }
 #endif

@@ -4,7 +4,8 @@ import IOKit.ps
 import SwiftUI
 
 /// Перевод строки, которая не попадает в SwiftUI как литерал. Ключ — русский текст,
-/// язык — тот, что выбран в Usin (Настройки → Основные → Язык).
+/// язык — тот, что выбран в Usin (Настройки → Основные → Язык). Переводы — `Localization/tools`
+/// в корне репозитория; у приложения своя таблица в той же системе (`Localization/app`).
 func L(_ key: String) -> String {
     ToolsLanguage.bundle.localizedString(forKey: key, value: key, table: nil)
 }

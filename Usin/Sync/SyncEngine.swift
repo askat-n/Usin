@@ -243,7 +243,7 @@ final class SyncEngine {
         } catch {
             if !auth.isSignedIn {
                 isConnected = false
-                status = .failed(tr("Войди в Google ещё раз"))
+                status = .failed(L("Войди в Google ещё раз"))
             } else {
                 status = .failed(Self.message(for: error))
             }
@@ -480,7 +480,7 @@ final class SyncEngine {
     }
 
     private static func message(for error: Error) -> String {
-        if error is URLError { return tr("Нет интернета или Google не отвечает") }
+        if error is URLError { return L("Нет интернета или Google не отвечает") }
         return error.localizedDescription
     }
 }

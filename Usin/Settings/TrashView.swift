@@ -17,41 +17,41 @@ struct TrashView: View {
                         row(node)
                     }
                 } footer: {
-                    Text(tr("Заметки удаляются навсегда через 30 дней после попадания в корзину."))
+                    Text(L("Заметки удаляются навсегда через 30 дней после попадания в корзину."))
                 }
             }
         }
         .overlay {
             if trashed.isEmpty {
-                ContentUnavailableView(tr("Корзина пуста"), systemImage: "trash",
-                                       description: Text(tr("Удалённые заметки хранятся здесь 30 дней.")))
+                ContentUnavailableView(L("Корзина пуста"), systemImage: "trash",
+                                       description: Text(L("Удалённые заметки хранятся здесь 30 дней.")))
             }
         }
-        .navigationTitle(tr("Корзина"))
+        .navigationTitle(L("Корзина"))
         .toolbar {
             if !trashed.isEmpty {
                 ToolbarItem(placement: .primaryAction) {
-                    Button(tr("Очистить"), role: .destructive) { confirmEmpty = true }
+                    Button(L("Очистить"), role: .destructive) { confirmEmpty = true }
                         .tint(.red)
                 }
             }
         }
-        .confirmationDialog(tr("Очистить корзину?"), isPresented: $confirmEmpty, titleVisibility: .visible) {
-            Button(tr("Удалить все навсегда"), role: .destructive) { withAnimation { ws.emptyTrash() } }
-            Button(tr("Отмена"), role: .cancel) {}
+        .confirmationDialog(L("Очистить корзину?"), isPresented: $confirmEmpty, titleVisibility: .visible) {
+            Button(L("Удалить все навсегда"), role: .destructive) { withAnimation { ws.emptyTrash() } }
+            Button(L("Отмена"), role: .cancel) {}
         } message: {
-            Text(tr("Заметки из корзины удалятся на всех устройствах. Это нельзя отменить."))
+            Text(L("Заметки из корзины удалятся на всех устройствах. Это нельзя отменить."))
         }
-        .confirmationDialog(tr("Удалить навсегда?"),
+        .confirmationDialog(L("Удалить навсегда?"),
                             isPresented: Binding(get: { confirmDelete != nil }, set: { if !$0 { confirmDelete = nil } }),
                             titleVisibility: .visible) {
-            Button(tr("Удалить навсегда"), role: .destructive) {
+            Button(L("Удалить навсегда"), role: .destructive) {
                 if let node = confirmDelete { withAnimation { ws.deleteForever(node) } }
                 confirmDelete = nil
             }
-            Button(tr("Отмена"), role: .cancel) { confirmDelete = nil }
+            Button(L("Отмена"), role: .cancel) { confirmDelete = nil }
         } message: {
-            Text(tr("Это нельзя отменить."))
+            Text(L("Это нельзя отменить."))
         }
     }
 
@@ -75,7 +75,7 @@ struct TrashView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
-            .help(tr("Восстановить"))
+            .help(L("Восстановить"))
             Button {
                 confirmDelete = node
             } label: {
@@ -85,23 +85,23 @@ struct TrashView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
-            .help(tr("Удалить навсегда"))
+            .help(L("Удалить навсегда"))
         }
         .swipeActions(edge: .leading) {
-            Button(tr("Восстановить")) { withAnimation { ws.restore(node) } }.tint(.accentColor)
+            Button(L("Восстановить")) { withAnimation { ws.restore(node) } }.tint(.accentColor)
         }
         .swipeActions(edge: .trailing) {
-            Button(tr("Удалить"), role: .destructive) { confirmDelete = node }
+            Button(L("Удалить"), role: .destructive) { confirmDelete = node }
         }
         .contextMenu {
-            Button(tr("Восстановить"), systemImage: "arrow.uturn.backward") { ws.restore(node) }
-            Button(tr("Удалить навсегда"), systemImage: "trash", role: .destructive) { confirmDelete = node }
+            Button(L("Восстановить"), systemImage: "arrow.uturn.backward") { ws.restore(node) }
+            Button(L("Удалить навсегда"), systemImage: "trash", role: .destructive) { confirmDelete = node }
         }
     }
 
     private func daysLeftText(_ node: Node) -> String {
         let days = node.daysLeftInTrash
-        return tr("Осталось дней") + ": \(days)"
+        return L("Осталось дней") + ": \(days)"
     }
 }
 
@@ -112,8 +112,8 @@ struct TrashToast: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: "trash").foregroundStyle(.secondary)
-            Text(tr("Заметка в корзине"))
-            Button(tr("Отменить")) { ws.undoTrashFromToast() }
+            Text(L("Заметка в корзине"))
+            Button(L("Отменить")) { ws.undoTrashFromToast() }
                 .buttonStyle(.plain)
                 .fontWeight(.semibold)
                 .foregroundStyle(Color.accentColor)

@@ -1,0 +1,238 @@
+Para sa AI
+Mga talang nakikita ng mga AI assistant
+Nakikita ng mga AI assistant ang talang ito. I-click para gawin itong pribado
+Pribadong tala. I-click para ibahagi ito sa mga AI assistant
+Itago sa AI
+Ibahagi sa AI
+Nakikita ng AI — i-click para itago
+Nakikita ng AI
+Memorya ng AI
+Ito ang nakikita ng mga AI assistant. Markahan ang isang tala ng “Para sa AI” at lalabas ito rito.
+Mga AI assistant
+Mga tala sa isang Markdown folder
+Folder
+Palitan ang folder…
+Ipakita sa Finder
+Error sa pag-export
+Na-update
+Pumili
+Walang access sa folder — piliin ulit ito
+Hindi matandaan ang folder
+Folder para sa mga Markdown na tala
+Nasa folder ang kopya ng mga talang may markang “Para sa AI” (✦): isang .md file bawat tala, mga subfolder para sa mga tema, at mga arrow bilang [[link]]. Nananatiling pribado ang ibang mga tala at hindi kailanman napupunta sa folder. Binabasa ito ng mga AI assistant sa pamamagitan ng MCP server ng Usin. Ang Usin mismo ang naglalapat ng isinusulat ng AI sa subfolder na inbox.
+Default
+Pula
+Kahel
+Dilaw
+Berde
+Teal
+Asul
+Lila
+Rosas
+Bagong tala
+Bagong tala sa tab
+Bagong tala sa tab (⌘T)
+Canvas
+Lahat ng tala…
+Lahat ng tala
+Lahat ng tala (⌘K)
+Bumalik sa Usin sphere
+Mag-zoom in
+Mag-zoom out
+Mga tab
+Tab
+Susunod na tab
+Nakaraang tab
+Isara ang tab
+Card
+Bilog
+Parisukat
+Sticker
+Teksto
+Heading
+Checklist
+Larawan
+Link
+Divider
+Tuwid
+Kurbado
+Arrow
+Tuldok
+Walang dulo
+Wala pang tala
+Pindutin nang matagal ang bakanteng bahagi ng canvas para gawin ang una
+Maghanap sa mga tala
+Tapos
+I-drag sa ibang hugis para gumuhit ng arrow. I-tap para sa bagong kaugnay na tala
+I-drag para baluktutin. I-double tap para ituwid
+Pindutin nang matagal ang bakanteng bahagi para gumawa ng tala
+Pamagat
+Sa canvas
+Burahin ang tala
+Sumulat… o “/” para sa mga block
+Item
+I-tap para sa menu. I-drag para ilipat ang linya
+Hindi puwedeng gawing ibang block ang larawan — mawawala ito
+Hindi available ang larawan at divider: may teksto ang linya
+Gawing
+Magdagdag ng linya sa ibaba
+Burahin
+Palitan mula sa Photos
+Mula sa Photos
+Mula sa file
+o i-drag dito ang isang larawan
+Buksan
+Buksan ang link
+Walang tema
+Bagong tema…
+Bagong tema
+Tema
+Gumawa
+Kanselahin
+Lahat
+Palitan ang pangalan
+Palitan ang pangalan ng tema
+Kulay
+Burahin ang tema
+Kulay ng hugis
+Kulay ng teksto
+Buksan sa tab
+Putul-putol
+Kulay ng arrow
+Baligtarin
+Mga Setting
+Wika
+Hitsura
+Tema ng hitsura
+System
+Maliwanag
+Madilim
+Tagal ng pagpindot para sa bagong tala
+s
+Hugis ng bagong tala
+Grid na tuldok
+Bersyon
+Sync
+Ikonekta ang Google Drive
+Kumokonekta…
+Nagsi-sync…
+I-sync ngayon
+Idiskonekta ang Google Drive
+Huling sync
+Hindi pa naka-sync
+Error sa sync
+Nakatago ang mga tala sa isang nakatagong folder ng app sa Google Drive mo at pareho sa iPhone, iPad at Mac. Kapag ni-reinstall mo ang app, ikonekta lang ulit ang Drive at babalik ang lahat.
+May nakitang mga tala sa Google Drive
+May mga tala rin sa device na ito. Kapag ikinonekta mo ang Google Drive, mabubura ang lahat ng nasa device na ito ngayon at papalitan ng mga tala mula sa Google Drive. Sang-ayon ka ba?
+Oo, burahin at ikonekta
+Hindi
+Mag-sign in ulit sa Google
+Walang internet o hindi sumasagot ang Google
+Hindi nagbigay ang Google ng pangmatagalang access — ikonekta ulit ang Google Drive
+Hindi nakakonekta ang Google Drive
+Naka-save sa Google Drive ang lahat ng pagbabago
+Sine-save…
+Hindi ma-save sa Google Drive
+Mag-sign in sa Google sa nagbukas na browser window — pagkatapos ay kusang kokonekta ang app.
+Basurahan
+Walang laman ang basurahan
+Itinatago rito ang mga binurang tala nang 30 araw.
+Permanenteng binubura ang mga tala 30 araw matapos mapunta sa basurahan.
+Linisin
+Linisin ang basurahan?
+Burahin lahat nang permanente
+Mabubura ang mga tala sa basurahan sa lahat ng device. Hindi na ito maaaring bawiin.
+Burahin nang permanente?
+Burahin nang permanente
+Hindi na ito maaaring bawiin.
+Ibalik
+Natitirang araw
+Nailipat sa basurahan ang tala
+I-undo
+Paano gamitin
+Buksan ang napiling tala
+I-duplicate
+Muling buksan ang isinarang tab
+Ilipat sa basurahan
+Hanapin…
+Kosmos
+Klasiko
+Estilo ng canvas
+Animation
+Terminal
+Laging madilim ang hitsura ng madidilim na estilo.
+Kapag walang animation, hindi gumagamit ng baterya ang canvas.
+Buhay na graph
+Lumulutang at tumatalbog ang mga tala na parang graph: i-drag ang isang tala at susunod ang mga kaugnay nito.
+Mga file
+Mga tala
+Sidebar
+Ipakita o itago ang sidebar (⌃⌘S)
+Mga tala bilang file
+Ipakita sa canvas
+I-collapse lahat
+Mga update
+Awtomatikong tingnan
+Tingnan ang mga update
+Huling tiningnan: %@
+Isang beses kada araw, tinitingnan ng Usin sa GitHub kung may bagong bersyon at inaalok itong i-install. Nananatili ang mga tala at setting.
+Update ng Usin
+Pinakabago na ang bersyon mo
+Ang Usin %@ ang pinakabagong bersyon.
+Hindi mapalitan ng Usin ang sarili nito rito. Ilipat ang Usin sa folder na Applications at subukan ulit, o i-download ang bagong bersyon mula sa release page.
+Hindi ma-download ang update. Tingnan ang koneksyon mo sa internet.
+Hindi matingnan ang mga update. Tingnan ang koneksyon mo sa internet.
+Hindi ma-install ang update. I-download ang bagong bersyon mula sa release page.
+Hindi pumasa sa signature check ang na-download na file, kaya hindi ito na-install.
+May bagong bersyon ng Usin
+Dina-download ang update…
+Ini-install…
+Nabigo ang update
+Tinitingnan ang mga update…
+Handa nang i-install ang bersyon %@. Ang nasa iyo ay %@.
+Kusang magre-relaunch ang Usin kapag handa na ang lahat.
+Laktawan ang Bersyong Ito
+Mamaya
+I-install
+Buksan ang Release Page
+Isara
+Pangkalahatan
+Tulong
+Kailangang aksyunan
+App
+Buksan sa Pag-login
+Kailangang payagan sa System Settings
+Ipakita sa Dock
+Ipakita sa Menu Bar
+Mula sa menu bar: bagong tala, mga numero ng Mac, mga setting at update.
+Mga tool ng Mac
+Mga serbisyo
+Kapag walang icon sa Dock, buksan ang Usin mula sa icon nito sa menu bar.
+Laging dark mode ang madidilim na estilo ng canvas. Nasa Mga tala ang estilo ng canvas.
+Tingnan ngayon
+Bersyon %@
+Hindi pa natitingnan
+Ang Usin ay mga tala sa walang hanggang canvas. Nasa gitna ang Usin sphere, at sa paligid nito mo binubuo ang iyong mapa: mga tala, arrow, tema.
+Pindutin nang matagal ang bakanteng bahagi gamit ang daliri (o mouse) para gumawa ng tala
+I-drag ang bakanteng bahagi para igalaw ang canvas. Mag-pinch o ⌘ + scroll para mag-zoom
+Ibinabalik ka ng ◎ na button sa kanan sa Usin sphere
+Mga Setting → Hitsura: “Kosmos” (buhay na kalawakan), “Terminal” (parang screen ng computer) o “Klasiko”. Puwedeng i-off ang animation
+Mga tala at arrow
+I-tap ang isang tala para piliin ito. Nasa ibabang bar ang hugis, kulay, kulay ng teksto, tema, burahin
+I-double tap ang isang tala para buksan ito sa tab sa itaas
+Ang asul na “+” sa tabi ng tala: i-drag sa ibang tala para sa arrow; i-tap para sa bagong kaugnay na tala
+I-tap ang arrow at i-drag ang gitnang tuldok nito para baluktutin
+Sa loob ng tala
+I-type ang “/” sa bakanteng linya para sa menu: heading, checklist, larawan, link, divider
+Gumagawa ng bagong linya ang Enter. Sa checklist, lalabas sa listahan ang Enter sa bakanteng item
+≡ sa kaliwa ng linya: i-tap para sa menu, i-drag para ilipat ang linya
+Mga tema, sync, basurahan
+Mga tema sa itaas ng canvas: i-tap ang isa para makita lang ang mga tala nito
+Ang ulap sa itaas: check mark — naka-save na lahat sa Google Drive, kumikislap — nagsi-save
+30 araw na nasa basurahan ang mga binurang tala (Mga Setting → Basurahan). Pagkatapos magbura, puwede mong i-tap ang “I-undo”
+Mga keyboard shortcut (Mac at iPad na may keyboard)
+I-duplicate ang tala
+I-redo
+Mga tab ayon sa pagkakasunod
+Susunod / nakaraang tab
+Mag-zoom in / out

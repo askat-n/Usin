@@ -11,10 +11,10 @@ enum NodeShape: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .card: tr("Карточка")
-        case .circle: tr("Круг")
-        case .square: tr("Квадрат")
-        case .sticker: tr("Стикер")
+        case .card: L("Карточка")
+        case .circle: L("Круг")
+        case .square: L("Квадрат")
+        case .sticker: L("Стикер")
         }
     }
 
@@ -53,12 +53,12 @@ enum BlockKind: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .text: tr("Текст")
-        case .heading: tr("Заголовок")
-        case .checklist: tr("Чек-лист")
-        case .image: tr("Картинка")
-        case .link: tr("Ссылка")
-        case .divider: tr("Разделитель")
+        case .text: L("Текст")
+        case .heading: L("Заголовок")
+        case .checklist: L("Чек-лист")
+        case .image: L("Картинка")
+        case .link: L("Ссылка")
+        case .divider: L("Разделитель")
         }
     }
 
@@ -78,7 +78,7 @@ enum EdgeStyle: String, CaseIterable, Identifiable {
     case straight, curved
 
     var id: String { rawValue }
-    var title: String { self == .straight ? tr("Прямая") : tr("Изогнутая") }
+    var title: String { self == .straight ? L("Прямая") : L("Изогнутая") }
     var icon: String { self == .straight ? "line.diagonal" : "point.topleft.down.to.point.bottomright.curvepath" }
 }
 
@@ -89,9 +89,9 @@ enum EdgeHead: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .arrow: tr("Стрелка")
-        case .dot: tr("Точка")
-        case .none: tr("Без наконечника")
+        case .arrow: L("Стрелка")
+        case .dot: L("Точка")
+        case .none: L("Без наконечника")
         }
     }
 
@@ -160,7 +160,7 @@ final class Node {
 
     var hasTitle: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    var displayTitle: String { hasTitle ? title : tr("Новая заметка") }
+    var displayTitle: String { hasTitle ? title : L("Новая заметка") }
 
     /// Сколько дней заметка хранится в корзине.
     static let trashDays = 30

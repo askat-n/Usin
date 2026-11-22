@@ -70,7 +70,7 @@ struct ColorGrid: View {
                         .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
-                .help(tr(swatch.name))
+                .help(L(swatch.name))
             }
         }
         .padding(14)
@@ -129,7 +129,7 @@ struct ThemeMenu: View {
     var body: some View {
         Menu {
             Button { theme = nil } label: {
-                if theme == nil { Label(tr("Без темы"), systemImage: "checkmark") } else { Text(tr("Без темы")) }
+                if theme == nil { Label(L("Без темы"), systemImage: "checkmark") } else { Text(L("Без темы")) }
             }
             ForEach(themes) { t in
                 Button { theme = t } label: {
@@ -137,7 +137,7 @@ struct ThemeMenu: View {
                 }
             }
             Divider()
-            Button(tr("Новая тема…"), systemImage: "plus") { creating = true }
+            Button(L("Новая тема…"), systemImage: "plus") { creating = true }
         } label: {
             label
         }
@@ -145,15 +145,15 @@ struct ThemeMenu: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help(tr("Тема"))
-        .alert(tr("Новая тема"), isPresented: $creating) {
-            TextField(tr("Название"), text: $newName)
-            Button(tr("Создать")) {
+        .help(L("Тема"))
+        .alert(L("Новая тема"), isPresented: $creating) {
+            TextField(L("Название"), text: $newName)
+            Button(L("Создать")) {
                 let name = newName.trimmingCharacters(in: .whitespaces)
                 if !name.isEmpty { theme = ws.createTheme(named: name) }
                 newName = ""
             }
-            Button(tr("Отмена"), role: .cancel) { newName = "" }
+            Button(L("Отмена"), role: .cancel) { newName = "" }
         }
     }
 
@@ -170,7 +170,7 @@ struct ThemeMenu: View {
         case .chip:
             HStack(spacing: 6) {
                 Circle().fill(color).frame(width: 8, height: 8)
-                Text(theme?.name ?? tr("Без темы"))
+                Text(theme?.name ?? L("Без темы"))
                 Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
             }
             .font(.subheadline.weight(.medium))
@@ -193,7 +193,7 @@ struct FilterBar: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                chip(tr("Все"), color: .secondary, active: ws.filterThemeID == nil) {
+                chip(L("Все"), color: .secondary, active: ws.filterThemeID == nil) {
                     ws.filterThemeID = nil
                 }
                 // Не тема, а отметка: заметки, которые видят ИИ-ассистенты.
@@ -202,7 +202,7 @@ struct FilterBar: View {
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: AIAccess.symbol).font(.system(size: 11, weight: .semibold))
-                        Text(tr("Для ИИ")).lineLimit(1)
+                        Text(L("Для ИИ")).lineLimit(1)
                     }
                     .font(.subheadline.weight(ws.isAIFilter ? .semibold : .regular))
                     .foregroundStyle(ws.isAIFilter ? AIAccess.color : Color.primary)
@@ -212,24 +212,24 @@ struct FilterBar: View {
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
-                .help(tr("Заметки, которые видят ИИ-ассистенты"))
+                .help(L("Заметки, которые видят ИИ-ассистенты"))
                 ForEach(themes) { t in
                     let active = ws.filterThemeID == t.id
                     chip(t.name, color: Palette.swatch(t.colorIndex).ink, active: active) {
                         withAnimation(.snappy) { ws.filterThemeID = active ? nil : t.id }
                     }
                     .contextMenu {
-                        Button(tr("Переименовать"), systemImage: "pencil") {
+                        Button(L("Переименовать"), systemImage: "pencil") {
                             renameText = t.name
                             renaming = t
                         }
-                        Menu(tr("Цвет")) {
+                        Menu(L("Цвет")) {
                             ForEach(1..<Palette.swatches.count, id: \.self) { i in
-                                Button(tr(Palette.swatches[i].name)) { t.colorIndex = i }
+                                Button(L(Palette.swatches[i].name)) { t.colorIndex = i }
                             }
                         }
                         Divider()
-                        Button(tr("Удалить тему"), systemImage: "trash", role: .destructive) { ws.delete(t) }
+                        Button(L("Удалить тему"), systemImage: "trash", role: .destructive) { ws.delete(t) }
                     }
                 }
                 Button { creating = true } label: {
@@ -240,7 +240,7 @@ struct FilterBar: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help(tr("Новая тема"))
+                .help(L("Новая тема"))
             }
             .padding(4)
             .panelBackground()
@@ -248,23 +248,23 @@ struct FilterBar: View {
             .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
-        .alert(tr("Новая тема"), isPresented: $creating) {
-            TextField(tr("Название"), text: $newName)
-            Button(tr("Создать")) {
+        .alert(L("Новая тема"), isPresented: $creating) {
+            TextField(L("Название"), text: $newName)
+            Button(L("Создать")) {
                 let name = newName.trimmingCharacters(in: .whitespaces)
                 if !name.isEmpty { ws.createTheme(named: name) }
                 newName = ""
             }
-            Button(tr("Отмена"), role: .cancel) { newName = "" }
+            Button(L("Отмена"), role: .cancel) { newName = "" }
         }
-        .alert(tr("Переименовать тему"), isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
-            TextField(tr("Название"), text: $renameText)
-            Button(tr("Готово")) {
+        .alert(L("Переименовать тему"), isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField(L("Название"), text: $renameText)
+            Button(L("Готово")) {
                 let name = renameText.trimmingCharacters(in: .whitespaces)
                 if !name.isEmpty { renaming?.name = name }
                 renaming = nil
             }
-            Button(tr("Отмена"), role: .cancel) { renaming = nil }
+            Button(L("Отмена"), role: .cancel) { renaming = nil }
         }
     }
 
@@ -291,7 +291,7 @@ struct ZoomControls: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            ToolButton(icon: "plus", help: tr("Приблизить")) { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
+            ToolButton(icon: "plus", help: L("Приблизить")) { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
             Button { withAnimation(.snappy) { ws.resetZoom() } } label: {
                 Text("\(Int((ws.scale * 100).rounded()))%")
                     .font(.system(size: 10, weight: .medium).monospacedDigit())
@@ -301,9 +301,9 @@ struct ZoomControls: View {
             }
             .buttonStyle(.plain)
             .help("100%")
-            ToolButton(icon: "minus", help: tr("Отдалить")) { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
+            ToolButton(icon: "minus", help: L("Отдалить")) { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
             Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 20, height: 1).padding(.vertical, 3)
-            ToolButton(icon: "scope", help: tr("К сфере Usin")) { ws.goHome() }
+            ToolButton(icon: "scope", help: L("К сфере Usin")) { ws.goHome() }
         }
         .padding(5)
         .panelBackground()
@@ -327,20 +327,20 @@ struct NodeInspector: View {
                 }
                 BarSeparator()
             }
-            ColorButton(index: $node.fillIndex, useInk: node.isRoot, help: tr("Цвет фигуры"))
-            ColorButton(index: $node.inkIndex, useInk: true, textIcon: true, help: tr("Цвет текста"))
+            ColorButton(index: $node.fillIndex, useInk: node.isRoot, help: L("Цвет фигуры"))
+            ColorButton(index: $node.inkIndex, useInk: true, textIcon: true, help: L("Цвет текста"))
             if !node.isRoot {
                 ThemeMenu(theme: $node.theme)
                 ToolButton(icon: AIAccess.symbol, active: node.isForAI,
-                           help: node.isForAI ? tr("Видна ИИ — нажми, чтобы скрыть") : tr("Открыть для ИИ")) {
+                           help: node.isForAI ? L("Видна ИИ — нажми, чтобы скрыть") : L("Открыть для ИИ")) {
                     node.isForAI.toggle()
                 }
             }
             BarSeparator()
-            ToolButton(icon: "pencil", help: tr("Переименовать")) { ws.startRenaming(node) }
+            ToolButton(icon: "pencil", help: L("Переименовать")) { ws.startRenaming(node) }
             if !node.isRoot {
-                ToolButton(icon: "arrow.up.forward.square", help: tr("Открыть во вкладке")) { ws.open(node) }
-                ToolButton(icon: "trash", help: tr("Удалить"), destructive: true) { ws.delete(node) }
+                ToolButton(icon: "arrow.up.forward.square", help: L("Открыть во вкладке")) { ws.open(node) }
+                ToolButton(icon: "trash", help: L("Удалить"), destructive: true) { ws.delete(node) }
             }
         }
     }
@@ -370,17 +370,17 @@ struct ConnectionInspector: View {
                 }
             }
             BarSeparator()
-            ToolButton(icon: "line.3.horizontal", active: connection.dashed, help: tr("Пунктир")) {
+            ToolButton(icon: "line.3.horizontal", active: connection.dashed, help: L("Пунктир")) {
                 connection.dashed.toggle()
             }
-            ColorButton(index: $connection.colorIndex, useInk: true, help: tr("Цвет стрелки"))
-            ToolButton(icon: "arrow.left.arrow.right", help: tr("Развернуть")) {
+            ColorButton(index: $connection.colorIndex, useInk: true, help: L("Цвет стрелки"))
+            ToolButton(icon: "arrow.left.arrow.right", help: L("Развернуть")) {
                 let from = connection.fromID
                 connection.fromID = connection.toID
                 connection.toID = from
             }
             BarSeparator()
-            ToolButton(icon: "trash", help: tr("Удалить"), destructive: true) { ws.deleteSelection() }
+            ToolButton(icon: "trash", help: L("Удалить"), destructive: true) { ws.deleteSelection() }
         }
     }
 }

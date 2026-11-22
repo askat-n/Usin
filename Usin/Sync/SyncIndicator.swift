@@ -31,10 +31,10 @@ struct SyncIndicator: View {
 
     private var title: String {
         switch state {
-        case .off: tr("Google Drive не подключён")
-        case .saved: tr("Все изменения сохранены в Google Drive")
-        case .saving: tr("Сохранение…")
-        case .error: tr("Не удалось сохранить в Google Drive")
+        case .off: L("Google Drive не подключён")
+        case .saved: L("Все изменения сохранены в Google Drive")
+        case .saving: L("Сохранение…")
+        case .error: L("Не удалось сохранить в Google Drive")
         }
     }
 
@@ -82,14 +82,14 @@ struct SyncIndicator: View {
                 Text(email).font(.caption).foregroundStyle(.secondary)
             }
             if let last = sync.lastSync {
-                Text(tr("Последняя синхронизация") + ": " + last.formatted(date: .abbreviated, time: .shortened))
+                Text(L("Последняя синхронизация") + ": " + last.formatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Button {
                 Task { await sync.syncNow() }
             } label: {
-                Label(tr("Синхронизировать сейчас"), systemImage: "arrow.triangle.2.circlepath")
+                Label(L("Синхронизировать сейчас"), systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(sync.status == .syncing)
             .padding(.top, 2)

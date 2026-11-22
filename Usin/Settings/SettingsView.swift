@@ -21,9 +21,9 @@ enum SettingsPage: Hashable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: tr("Основные")
-        case .notes: tr("Заметки")
-        case .help: tr("Справка")
+        case .general: L("Основные")
+        case .notes: L("Заметки")
+        case .help: L("Справка")
         #if os(macOS)
         case .tool(let page): page.title
         #endif
@@ -66,7 +66,12 @@ struct SettingsView: View {
 
     var body: some View {
         @Bindable var sync = sync
+        let language = AppSettings.shared.language
         container
+            // Инструменты Mac берут язык из настроек сами — при смене языка окно собирается заново.
+            .id(language)
+            .environment(\.locale, language.locale)
+            .environment(\.layoutDirection, language.layoutDirection)
             .onAppear(perform: takeRequestedPage)
             .onChange(of: ws.settingsPage) { takeRequestedPage() }
             .sheet(isPresented: $sync.needsReplaceConfirmation) {
@@ -116,10 +121,10 @@ struct SettingsView: View {
             List(selection: $page) {
                 row(.general)
                 row(.notes)
-                Section(tr("Инструменты Mac")) {
+                Section(L("Инструменты Mac")) {
                     ForEach(ToolPage.tools, id: \.self) { toolRow($0) }
                 }
-                Section(tr("Сервисы")) {
+                Section(L("Сервисы")) {
                     ForEach(ToolPage.services, id: \.self) { toolRow($0) }
                 }
                 Section {
@@ -157,17 +162,17 @@ struct SettingsView: View {
                     }
                 }
                 Section {
-                    LabeledContent("Usin", value: tr("Версия") + " " + appVersion)
+                    LabeledContent("Usin", value: L("Версия") + " " + appVersion)
                 }
             }
             .navigationDestination(for: SettingsPage.self) { page in
                 detail(page).navigationTitle(page.title)
             }
-            .navigationTitle(tr("Настройки"))
+            .navigationTitle(L("Настройки"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(tr("Готово")) { dismiss() }
+                    Button(L("Готово")) { dismiss() }
                 }
             }
         }
@@ -190,7 +195,7 @@ private struct SettingsRow: View {
             Text(page.title)
             Spacer()
             if attention {
-                Circle().fill(.orange).frame(width: 7, height: 7).help(tr("Нужно действие"))
+                Circle().fill(.orange).frame(width: 7, height: 7).help(L("Нужно действие"))
             }
         }
     }
@@ -225,29 +230,29 @@ struct GeneralSettingsPage: View {
         Form {
             #if os(macOS)
             Section {
-                Toggle(tr("Запускать при входе в систему"), isOn: $launchAtLogin)
+                Toggle(L("Запускать при входе в систему"), isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, enabled in setLaunchAtLogin(enabled) }
                 if loginNeedsApproval {
                     LabeledContent {
-                        Button(tr("Открыть")) { SMAppService.openSystemSettingsLoginItems() }
+                        Button(L("Открыть")) { SMAppService.openSystemSettingsLoginItems() }
                     } label: {
-                        Text(tr("Нужно разрешить в Системных настройках"))
+                        Text(L("Нужно разрешить в Системных настройках"))
                     }
                 }
-                Toggle(tr("Значок в Dock"), isOn: $showInDock)
+                Toggle(L("Значок в Dock"), isOn: $showInDock)
                     .onChange(of: showInDock) { _, show in
                         // Без Dock приложение открывается только из строки меню — значок там нужен обязательно.
                         if !show { showMenuBarIcon = true }
                         DockPolicy.apply(showInDock: show)
                     }
-                Toggle(tr("Значок в строке меню"), isOn: $showMenuBarIcon)
+                Toggle(L("Значок в строке меню"), isOn: $showMenuBarIcon)
                     .disabled(!showInDock)
             } header: {
-                Text(tr("Приложение"))
+                Text(L("Приложение"))
             } footer: {
                 Text(showInDock
-                     ? tr("Из строки меню — новая заметка, цифры Mac, настройки и обновления.")
-                     : tr("Без значка в Dock Usin открывается из значка в строке меню."))
+                     ? L("Из строки меню — новая заметка, цифры Mac, настройки и обновления.")
+                     : L("Без значка в Dock Usin открывается из значка в строке меню."))
             }
             #endif
 
@@ -255,26 +260,24 @@ struct GeneralSettingsPage: View {
             ToolsGeneralSections()
             #endif
 
-            Section(tr("Язык")) {
-                Picker(tr("Язык"), selection: $settings.language) {
+            Section {
+                Picker(L("Язык"), selection: $settings.language) {
                     ForEach(AppLanguage.allCases) { Text($0.title).tag($0) }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
 
             Section {
-                Picker(tr("Тема оформления"), selection: $settings.appearance) {
+                Picker(L("Тема оформления"), selection: $settings.appearance) {
                     ForEach(AppAppearance.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .disabled(settings.canvasStyle.isDark)
             } header: {
-                Text(tr("Оформление"))
+                Text(L("Оформление"))
             } footer: {
                 if settings.canvasStyle.isDark {
-                    Text(tr("Тёмные стили холста всегда в тёмном оформлении. Стиль холста — в разделе «Заметки»."))
+                    Text(L("Тёмные стили холста всегда в тёмном оформлении. Стиль холста — в разделе «Заметки»."))
                 }
             }
 
@@ -305,41 +308,41 @@ struct NotesSettingsPage: View {
     var body: some View {
         @Bindable var settings = AppSettings.shared
         Form {
-            Section(tr("Холст")) {
-                Picker(tr("Стиль холста"), selection: $settings.canvasStyle) {
+            Section(L("Холст")) {
+                Picker(L("Стиль холста"), selection: $settings.canvasStyle) {
                     ForEach(CanvasStyle.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 if settings.canvasStyle.isDark {
                     Toggle(isOn: $settings.cosmosMotion) {
-                        Text(tr("Анимация"))
-                        Text(tr("Тёмные стили всегда в тёмном оформлении.") + " " + tr("Без анимации холст не тратит батарею."))
+                        Text(L("Анимация"))
+                        Text(L("Тёмные стили всегда в тёмном оформлении.") + " " + L("Без анимации холст не тратит батарею."))
                     }
                 }
                 Toggle(isOn: $settings.classicMotion) {
-                    Text(tr("Живой граф"))
-                    Text(tr("Заметки плавают и пружинят, как граф: потяни заметку — соседи по стрелкам потянутся за ней."))
+                    Text(L("Живой граф"))
+                    Text(L("Заметки плавают и пружинят, как граф: потяни заметку — соседи по стрелкам потянутся за ней."))
                 }
-                Picker(tr("Удержание для новой заметки"), selection: $settings.holdDuration) {
+                Picker(L("Удержание для новой заметки"), selection: $settings.holdDuration) {
                     ForEach(AppSettings.holdOptions, id: \.self) { value in
-                        Text(value.formatted(.number.precision(.fractionLength(0...2))) + " " + tr("с")).tag(value)
+                        Text(value.formatted(.number.precision(.fractionLength(0...2))) + " " + L("с")).tag(value)
                     }
                 }
-                Picker(tr("Форма новой заметки"), selection: $settings.defaultShape) {
+                Picker(L("Форма новой заметки"), selection: $settings.defaultShape) {
                     ForEach(NodeShape.allCases) { shape in
                         Label(shape.title, systemImage: shape.icon).tag(shape)
                     }
                 }
-                Toggle(tr("Сетка из точек"), isOn: $settings.showGrid)
+                Toggle(L("Сетка из точек"), isOn: $settings.showGrid)
             }
 
-            Section(tr("Синхронизация")) {
+            Section(L("Синхронизация")) {
                 SyncSettings()
             }
 
             #if os(macOS)
-            Section(tr("ИИ-ассистенты")) {
+            Section(L("ИИ-ассистенты")) {
                 ExportSettings()
             }
             #endif
@@ -351,7 +354,7 @@ struct NotesSettingsPage: View {
                     LabeledContent {
                         if !trashed.isEmpty { Text("\(trashed.count)") }
                     } label: {
-                        Label(tr("Корзина"), systemImage: "trash")
+                        Label(L("Корзина"), systemImage: "trash")
                     }
                 }
             }
@@ -389,52 +392,52 @@ private struct SyncSettings: View {
             Button {
                 Task { await sync.syncNow() }
             } label: {
-                Label(tr("Синхронизировать сейчас"), systemImage: "arrow.triangle.2.circlepath")
+                Label(L("Синхронизировать сейчас"), systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(sync.status == .syncing)
             Button(role: .destructive) {
                 sync.disconnect()
             } label: {
-                Label(tr("Отключить Google Drive"), systemImage: "xmark.circle")
+                Label(L("Отключить Google Drive"), systemImage: "xmark.circle")
             }
         } else {
             if sync.status == .connecting {
                 #if os(macOS)
-                Text(tr("Войди в Google в открывшемся окне браузера — потом приложение подключится само."))
+                Text(L("Войди в Google в открывшемся окне браузера — потом приложение подключится само."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 #endif
                 Button(role: .cancel) {
                     sync.cancelConnecting()
                 } label: {
-                    Label(tr("Отмена"), systemImage: "xmark")
+                    Label(L("Отмена"), systemImage: "xmark")
                 }
             } else {
                 Button {
                     Task { await sync.connect(using: webAuth) }
                 } label: {
-                    Label(tr("Подключить Google Drive"), systemImage: "link")
+                    Label(L("Подключить Google Drive"), systemImage: "link")
                 }
             }
         }
 
-        Text(tr("Заметки хранятся в скрытой папке приложения на твоём Google Drive и одинаковы на iPhone, iPad и Mac. Если переустановить приложение, просто подключи Drive снова — всё вернётся."))
+        Text(L("Заметки хранятся в скрытой папке приложения на твоём Google Drive и одинаковы на iPhone, iPad и Mac. Если переустановить приложение, просто подключи Drive снова — всё вернётся."))
             .font(.caption)
             .foregroundStyle(.secondary)
     }
 
     private var statusText: String {
         switch sync.status {
-        case .connecting: return tr("Подключение…")
-        case .syncing: return tr("Синхронизация…")
-        case .failed(let message): return tr("Ошибка синхронизации") + ": " + message
+        case .connecting: return L("Подключение…")
+        case .syncing: return L("Синхронизация…")
+        case .failed(let message): return L("Ошибка синхронизации") + ": " + message
         case .off, .idle:
-            guard sync.isConnected else { return tr("Подключить Google Drive") }
+            guard sync.isConnected else { return L("Подключить Google Drive") }
             let account = sync.email.map { $0 + " · " } ?? ""
             if let last = sync.lastSync {
-                return account + tr("Последняя синхронизация") + ": " + last.formatted(date: .omitted, time: .shortened)
+                return account + L("Последняя синхронизация") + ": " + last.formatted(date: .omitted, time: .shortened)
             }
-            return account + tr("Ещё не синхронизировалось")
+            return account + L("Ещё не синхронизировалось")
         }
     }
 
@@ -452,30 +455,30 @@ private struct ExportSettings: View {
 
     var body: some View {
         Toggle(isOn: Binding(get: { exporter.isEnabled }, set: { exporter.setEnabled($0) })) {
-            Label(tr("Заметки в папке Markdown"), systemImage: "folder.badge.gearshape")
+            Label(L("Заметки в папке Markdown"), systemImage: "folder.badge.gearshape")
         }
         if let folder = exporter.folderURL {
-            LabeledContent(tr("Папка")) {
+            LabeledContent(L("Папка")) {
                 Text(folder.path(percentEncoded: false).replacingOccurrences(of: NSHomeDirectory(), with: "~"))
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .textSelection(.enabled)
             }
             HStack {
-                Button(tr("Другая папка…")) { exporter.chooseFolder() }
-                Button(tr("Показать в Finder")) { exporter.revealInFinder() }
+                Button(L("Другая папка…")) { exporter.chooseFolder() }
+                Button(L("Показать в Finder")) { exporter.revealInFinder() }
             }
         }
         if let error = exporter.errorMessage {
-            Text(tr("Ошибка экспорта") + ": " + error)
+            Text(L("Ошибка экспорта") + ": " + error)
                 .font(.caption)
                 .foregroundStyle(.red)
         } else if exporter.isEnabled, let last = exporter.lastExport {
-            Text(tr("Обновлено") + ": " + last.formatted(date: .omitted, time: .standard))
+            Text(L("Обновлено") + ": " + last.formatted(date: .omitted, time: .standard))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        Text(tr("В папке — копия заметок с отметкой «Для ИИ» (✦): по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Остальные заметки остаются личными и в папку не попадают. Её читают ИИ-ассистенты через MCP-сервер Usin. Записи ИИ из подпапки inbox Usin применяет сам."))
+        Text(L("В папке — копия заметок с отметкой «Для ИИ» (✦): по файлу .md на заметку, подпапки — темы, стрелки — [[ссылки]]. Остальные заметки остаются личными и в папку не попадают. Её читают ИИ-ассистенты через MCP-сервер Usin. Записи ИИ из подпапки inbox Usin применяет сам."))
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -495,10 +498,10 @@ struct ReplaceConfirmation: View {
                 .font(.system(size: 40))
                 .foregroundStyle(.orange)
                 .padding(.top, 8)
-            Text(tr("На Google Drive найдены заметки"))
+            Text(L("На Google Drive найдены заметки"))
                 .font(.title3.bold())
                 .multilineTextAlignment(.center)
-            Text(tr("На этом устройстве тоже есть заметки. Если подключить Google Drive, всё, что сейчас на этом устройстве, сотрётся и заменится заметками с Google Drive. Согласен?"))
+            Text(L("На этом устройстве тоже есть заметки. Если подключить Google Drive, всё, что сейчас на этом устройстве, сотрётся и заменится заметками с Google Drive. Согласен?"))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -508,7 +511,7 @@ struct ReplaceConfirmation: View {
                     dismiss()
                     onYes()
                 } label: {
-                    Text(tr("Да, стереть и подключить"))
+                    Text(L("Да, стереть и подключить"))
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -521,7 +524,7 @@ struct ReplaceConfirmation: View {
                     dismiss()
                     onNo()
                 } label: {
-                    Text(tr("Нет"))
+                    Text(L("Нет"))
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)

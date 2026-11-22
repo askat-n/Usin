@@ -1,0 +1,238 @@
+Para IA
+Notas que ven los asistentes de IA
+Los asistentes de IA ven esta nota. Haz clic para hacerla privada
+Nota privada. Haz clic para compartirla con los asistentes de IA
+Ocultar a la IA
+Compartir con la IA
+Visible para la IA — haz clic para ocultarla
+Visible para la IA
+Memoria de IA
+Esto es lo que ven los asistentes de IA. Marca una nota «Para IA» y aparecerá aquí.
+Asistentes de IA
+Notas en una carpeta Markdown
+Carpeta
+Cambiar carpeta…
+Mostrar en Finder
+Error de exportación
+Actualizado
+Elegir
+Sin acceso a la carpeta — vuelve a elegirla
+No se pudo recordar la carpeta
+Carpeta para notas en Markdown
+La carpeta guarda una copia de las notas marcadas «Para IA» (✦): un archivo .md por nota, subcarpetas para los temas y flechas como [[enlaces]]. Las demás notas siguen siendo privadas y nunca llegan a la carpeta. Los asistentes de IA la leen a través del servidor MCP de Usin. Usin aplica por sí mismo lo que la IA escribe en la subcarpeta inbox.
+Predeterminado
+Rojo
+Naranja
+Amarillo
+Verde
+Turquesa
+Azul
+Morado
+Rosa
+Nueva nota
+Nueva nota en pestaña
+Nueva nota en pestaña (⌘T)
+Lienzo
+Todas las notas…
+Todas las notas
+Todas las notas (⌘K)
+Volver a la esfera de Usin
+Acercar
+Alejar
+Pestañas
+Pestaña
+Pestaña siguiente
+Pestaña anterior
+Cerrar pestaña
+Tarjeta
+Círculo
+Cuadrado
+Nota adhesiva
+Texto
+Encabezado
+Lista de tareas
+Imagen
+Enlace
+Separador
+Recta
+Curva
+Flecha
+Punto
+Sin punta
+Aún no hay notas
+Mantén el dedo en un espacio vacío del lienzo para crear la primera
+Buscar en las notas
+Listo
+Arrastra hasta otra figura para crear una flecha. Toca para una nueva nota enlazada
+Arrastra para curvar. Doble toque para enderezar
+Mantén el dedo en un espacio vacío para crear una nota
+Título
+En el lienzo
+Eliminar nota
+Escribe… o «/» para bloques
+Elemento
+Toca para ver el menú. Arrastra para mover la línea
+Una imagen no puede convertirse en otro bloque — se perdería
+Imagen y separador no disponibles: la línea tiene texto
+Convertir en
+Añadir línea debajo
+Eliminar
+Reemplazar desde Fotos
+Desde Fotos
+Desde un archivo
+o arrastra una imagen aquí
+Abrir
+Abrir enlace
+Sin tema
+Nuevo tema…
+Nuevo tema
+Tema
+Crear
+Cancelar
+Todas
+Renombrar
+Renombrar tema
+Color
+Eliminar tema
+Color de la figura
+Color del texto
+Abrir en pestaña
+Discontinua
+Color de la flecha
+Invertir
+Ajustes
+Idioma
+Apariencia
+Tema
+Sistema
+Claro
+Oscuro
+Mantener para crear una nota
+s
+Forma de la nueva nota
+Cuadrícula de puntos
+Versión
+Sincronización
+Conectar Google Drive
+Conectando…
+Sincronizando…
+Sincronizar ahora
+Desconectar Google Drive
+Última sincronización
+Aún no se ha sincronizado
+Error de sincronización
+Las notas se guardan en una carpeta oculta de la app en tu Google Drive y son las mismas en iPhone, iPad y Mac. Si reinstalas la app, vuelve a conectar Drive y todo regresará.
+Se encontraron notas en Google Drive
+Este dispositivo también tiene notas. Si conectas Google Drive, todo lo que hay ahora en este dispositivo se borrará y se reemplazará por las notas de Google Drive. ¿Estás de acuerdo?
+Sí, borrar y conectar
+No
+Vuelve a iniciar sesión en Google
+No hay internet o Google no responde
+Google no concedió acceso permanente — vuelve a conectar Google Drive
+Google Drive no está conectado
+Todos los cambios se guardaron en Google Drive
+Guardando…
+No se pudo guardar en Google Drive
+Inicia sesión en Google en la ventana del navegador que se abrió — después la app se conectará sola.
+Papelera
+La papelera está vacía
+Las notas eliminadas se guardan aquí durante 30 días.
+Las notas se eliminan para siempre 30 días después de ir a la papelera.
+Vaciar
+¿Vaciar la papelera?
+Eliminar todo para siempre
+Las notas de la papelera se eliminarán en todos los dispositivos. No se puede deshacer.
+¿Eliminar para siempre?
+Eliminar para siempre
+No se puede deshacer.
+Restaurar
+Días restantes
+Nota movida a la papelera
+Deshacer
+Cómo se usa
+Abrir la nota seleccionada
+Duplicar
+Reabrir pestaña cerrada
+Mover a la papelera
+Buscar…
+Cosmos
+Clásico
+Estilo del lienzo
+Animación
+Terminal
+Los estilos oscuros siempre usan la apariencia oscura.
+Sin animación, el lienzo no gasta batería.
+Grafo vivo
+Las notas flotan y rebotan como un grafo: arrastra una nota y sus vecinas enlazadas la siguen.
+Archivos
+Notas
+Barra lateral
+Mostrar u ocultar la barra lateral (⌃⌘S)
+Notas como archivos
+Mostrar en el lienzo
+Contraer todo
+Actualizaciones
+Buscar automáticamente
+Buscar actualizaciones
+Última comprobación: %@
+Una vez al día Usin busca en GitHub si hay una versión nueva y te ofrece instalarla. Las notas y los ajustes se conservan.
+Actualización de Usin
+Tienes la última versión
+Usin %@ es la versión más reciente.
+Usin no puede reemplazarse aquí. Muévelo a la carpeta Aplicaciones e inténtalo de nuevo, o descarga la nueva versión desde la página de la versión.
+No se pudo descargar la actualización. Revisa tu conexión a internet.
+No se pudieron buscar actualizaciones. Revisa tu conexión a internet.
+No se pudo instalar la actualización. Descarga la nueva versión desde la página de la versión.
+El archivo descargado no superó la verificación de firma, así que no se instaló.
+Hay una nueva versión de Usin disponible
+Descargando la actualización…
+Instalando…
+La actualización falló
+Buscando actualizaciones…
+La versión %@ está lista para instalarse. Tienes la %@.
+Usin se reiniciará solo cuando todo esté listo.
+Omitir esta versión
+Más tarde
+Instalar
+Abrir página de la versión
+Cerrar
+General
+Ayuda
+Requiere atención
+App
+Abrir al iniciar sesión
+Requiere aprobación en Ajustes del Sistema
+Mostrar en el Dock
+Mostrar en la barra de menús
+Desde la barra de menús: una nota nueva, datos del Mac, ajustes y actualizaciones.
+Herramientas del Mac
+Servicios
+Sin el icono en el Dock, abre Usin desde su icono en la barra de menús.
+Los estilos oscuros del lienzo siempre usan el modo oscuro. El estilo del lienzo está en Notas.
+Comprobar ahora
+Versión %@
+Aún no se ha comprobado
+Usin son notas en un lienzo infinito. La esfera de Usin está en el centro y a su alrededor construyes tu mapa: notas, flechas, temas.
+Mantén el dedo (o el ratón) en un espacio vacío para crear una nota
+Arrastra un espacio vacío para mover el lienzo. Pellizca o usa ⌘ + desplazamiento para hacer zoom
+El botón ◎ de la derecha te devuelve a la esfera de Usin
+Ajustes → Apariencia: «Cosmos» (espacio vivo), «Terminal» (como una pantalla de ordenador) o «Clásico». La animación se puede desactivar
+Notas y flechas
+Toca una nota para seleccionarla. La barra inferior tiene forma, color, color del texto, tema y eliminar
+Toca dos veces una nota para abrirla en una pestaña arriba
+El «+» azul junto a una nota: arrástralo a otra nota para una flecha; tócalo para una nueva nota enlazada
+Toca una flecha y arrastra su punto central para curvarla
+Dentro de una nota
+Escribe «/» en una línea vacía para un menú: encabezado, lista de tareas, imagen, enlace, separador
+Enter crea una línea nueva. En una lista de tareas, Enter en un elemento vacío sale de la lista
+≡ a la izquierda de una línea: tócalo para el menú, arrástralo para mover la línea
+Temas, sincronización, papelera
+Temas arriba del lienzo: toca uno para ver solo sus notas
+La nube de arriba: una marca significa que todo está guardado en Google Drive; si parpadea, se está guardando
+Las notas eliminadas pasan 30 días en la papelera (Ajustes → Papelera). Justo después de eliminar puedes tocar «Deshacer»
+Atajos de teclado (Mac y iPad con teclado)
+Duplicar nota
+Rehacer
+Pestañas en orden
+Pestaña siguiente / anterior
+Acercar / alejar

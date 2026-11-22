@@ -132,10 +132,10 @@ struct TabBar: View {
         let byID = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         HStack(spacing: 6) {
             ToolButton(icon: "sidebar.left", active: ws.showSidebar,
-                       help: tr("Показать или скрыть боковую панель (⌃⌘S)")) {
+                       help: L("Показать или скрыть боковую панель (⌃⌘S)")) {
                 withAnimation(.snappy) { ws.showSidebar.toggle() }
             }
-            TabChip(title: compact ? "" : tr("Холст"), icon: "circle.hexagongrid", active: ws.activeTab == nil && ws.home == .canvas) {
+            TabChip(title: compact ? "" : L("Холст"), icon: "circle.hexagongrid", active: ws.activeTab == nil && ws.home == .canvas) {
                 ws.showHome(.canvas)
             }
             if !ws.openTabs.isEmpty {
@@ -157,9 +157,9 @@ struct TabBar: View {
                 }
             }
             SyncIndicator()
-            ToolButton(icon: "plus", help: tr("Новая заметка во вкладке (⌘T)")) { ws.newNoteTab() }
-            ToolButton(icon: "magnifyingglass", help: tr("Все заметки (⌘K)")) { ws.showAllNotes = true }
-            ToolButton(icon: "gearshape", help: tr("Настройки")) { ws.showSettings = true }
+            ToolButton(icon: "plus", help: L("Новая заметка во вкладке (⌘T)")) { ws.newNoteTab() }
+            ToolButton(icon: "magnifyingglass", help: L("Все заметки (⌘K)")) { ws.showAllNotes = true }
+            ToolButton(icon: "gearshape", help: L("Настройки")) { ws.showSettings = true }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
@@ -196,7 +196,7 @@ struct TabChip: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help(tr("Закрыть вкладку"))
+                .help(L("Закрыть вкладку"))
             }
         }
         .font(.subheadline.weight(active ? .semibold : .regular))
@@ -260,18 +260,18 @@ struct AllNotesView: View {
             .overlay {
                 if results.isEmpty {
                     if query.isEmpty {
-                        ContentUnavailableView(tr("Пока нет заметок"), systemImage: "note.text",
-                                               description: Text(tr("Удержи палец на пустом месте холста, чтобы создать первую")))
+                        ContentUnavailableView(L("Пока нет заметок"), systemImage: "note.text",
+                                               description: Text(L("Удержи палец на пустом месте холста, чтобы создать первую")))
                     } else {
                         ContentUnavailableView.search(text: query)
                     }
                 }
             }
-            .searchable(text: $query, prompt: tr("Поиск по заметкам"))
-            .navigationTitle(tr("Все заметки"))
+            .searchable(text: $query, prompt: L("Поиск по заметкам"))
+            .navigationTitle(L("Все заметки"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(tr("Готово")) { dismiss() }
+                    Button(L("Готово")) { dismiss() }
                 }
             }
         }

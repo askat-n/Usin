@@ -417,7 +417,7 @@ struct CanvasView: View {
                         finishLink(from: node, at: v.location, moved: moved, t)
                     }
             )
-            .help(tr("Тяни к другой фигуре — стрелка. Нажми — новая связанная заметка"))
+            .help(L("Тяни к другой фигуре — стрелка. Нажми — новая связанная заметка"))
     }
 
     private func finishLink(from source: Node, at point: CGPoint, moved: Bool, _ t: CanvasTransform) {
@@ -476,7 +476,7 @@ struct CanvasView: View {
                 c.bendY = 0
                 c.style = .straight
             }
-            .help(tr("Тяни, чтобы изогнуть. Двойной тап — выпрямить"))
+            .help(L("Тяни, чтобы изогнуть. Двойной тап — выпрямить"))
     }
 
     // MARK: - Zoom
@@ -522,7 +522,7 @@ struct CanvasView: View {
             }
         case .empty:
             if nodes.count <= 1 {
-                Text(tr("Удержи палец на пустом месте — появится заметка"))
+                Text(L("Удержи палец на пустом месте — появится заметка"))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)

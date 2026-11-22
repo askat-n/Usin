@@ -1,0 +1,238 @@
+For AI
+Notes AI assistants can see
+AI assistants can see this note. Click to make it private
+Private note. Click to share it with AI assistants
+Hide from AI
+Share with AI
+Visible to AI — click to hide
+Visible to AI
+AI memory
+This is what AI assistants can see. Mark a note “For AI” and it shows up here.
+AI assistants
+Notes in a Markdown folder
+Folder
+Change folder…
+Show in Finder
+Export error
+Updated
+Choose
+No access to the folder — choose it again
+Couldn't remember the folder
+Folder for Markdown notes
+The folder holds a copy of notes marked “For AI” (✦): one .md file per note, subfolders for themes, arrows as [[links]]. All other notes stay private and never reach the folder. AI assistants read it through the Usin MCP server. Usin applies AI writes from the inbox subfolder itself.
+Default
+Red
+Orange
+Yellow
+Green
+Teal
+Blue
+Purple
+Pink
+New note
+New note in tab
+New note in tab (⌘T)
+Canvas
+All notes…
+All notes
+All notes (⌘K)
+Back to the Usin sphere
+Zoom in
+Zoom out
+Tabs
+Tab
+Next tab
+Previous tab
+Close tab
+Card
+Circle
+Square
+Sticker
+Text
+Heading
+Checklist
+Image
+Link
+Divider
+Straight
+Curved
+Arrow
+Dot
+No arrowhead
+No notes yet
+Hold your finger on an empty spot of the canvas to create one
+Search notes
+Done
+Drag to another shape to draw an arrow. Tap for a new linked note
+Drag to bend. Double-tap to straighten
+Hold your finger on an empty spot to create a note
+Title
+On canvas
+Delete note
+Write… or type “/” for blocks
+Item
+Tap for menu. Drag to move the line
+An image can't become another block — it would be lost
+Image and divider are unavailable: this line has text
+Turn into
+Add line below
+Delete
+Replace from Photos
+From Photos
+From file
+or drag an image here
+Open
+Open link
+No theme
+New theme…
+New theme
+Theme
+Create
+Cancel
+All
+Rename
+Rename theme
+Color
+Delete theme
+Shape color
+Text color
+Open in tab
+Dashed
+Arrow color
+Reverse
+Settings
+Language
+Appearance
+Theme
+System
+Light
+Dark
+Hold to create a note
+s
+New note shape
+Dot grid
+Version
+Sync
+Connect Google Drive
+Connecting…
+Syncing…
+Sync now
+Disconnect Google Drive
+Last sync
+Not synced yet
+Sync error
+Notes are kept in a hidden app folder on your Google Drive and stay the same on iPhone, iPad and Mac. If you reinstall the app, just connect Drive again and everything comes back.
+Notes found on Google Drive
+This device has notes too. If you connect Google Drive, everything on this device will be erased and replaced with the notes from Google Drive. Do you agree?
+Yes, erase and connect
+No
+Sign in to Google again
+No internet or Google is not responding
+Google didn't grant lasting access — connect Google Drive again
+Google Drive is not connected
+All changes saved to Google Drive
+Saving…
+Couldn't save to Google Drive
+Sign in to Google in the browser window that opened — the app will connect by itself afterwards.
+Trash
+Trash is empty
+Deleted notes are kept here for 30 days.
+Notes are deleted forever 30 days after they go to the trash.
+Empty
+Empty the trash?
+Delete all forever
+Notes in the trash will be deleted on all devices. This can't be undone.
+Delete forever?
+Delete forever
+This can't be undone.
+Restore
+Days left
+Note moved to trash
+Undo
+How to use
+Open selected note
+Duplicate
+Reopen closed tab
+Move to trash
+Find…
+Cosmos
+Classic
+Canvas style
+Animation
+Terminal
+Dark styles are always in dark appearance.
+Without animation the canvas doesn't use battery.
+Living graph
+Notes float and bounce like a graph: drag a note and its linked neighbors follow.
+Files
+Notes
+Sidebar
+Show or hide the sidebar (⌃⌘S)
+Notes as files
+Show on canvas
+Collapse all
+Updates
+Check automatically
+Check for Updates
+Last checked: %@
+Once a day Usin checks GitHub for a new version and offers to install it. Notes and settings are kept.
+Usin Update
+You’re up to date
+Usin %@ is the latest version.
+Usin can’t replace itself here. Move it to the Applications folder and try again, or download the new version from the release page.
+Couldn’t download the update. Check your internet connection.
+Couldn’t check for updates. Check your internet connection.
+Couldn’t install the update. Download the new version from the release page.
+The downloaded file failed the signature check, so it wasn’t installed.
+A new version of Usin is available
+Downloading update…
+Installing…
+Update failed
+Checking for updates…
+Version %@ is ready to install. You have %@.
+Usin will restart by itself when everything is ready.
+Skip This Version
+Later
+Install
+Open Release Page
+Close
+General
+Help
+Needs attention
+App
+Open at login
+Needs approval in System Settings
+Show in Dock
+Show in menu bar
+From the menu bar: a new note, Mac stats, settings and updates.
+Mac tools
+Services
+Without the Dock icon, open Usin from its menu bar icon.
+Dark canvas styles always use dark mode. The canvas style is in Notes.
+Check Now
+Version %@
+Not checked yet
+Usin is notes on an infinite canvas. The Usin sphere sits in the center, and you build your map around it: notes, arrows, themes.
+Hold your finger (or mouse) on an empty spot to create a note
+Drag an empty spot to pan. Pinch or ⌘ + scroll to zoom
+The ◎ button on the right takes you back to the Usin sphere
+Settings → Appearance: “Cosmos” (living space), “Terminal” (computer screen look) or “Classic”. Animation can be turned off
+Notes and arrows
+Tap a note to select it. The bottom bar has shape, color, text color, theme, delete
+Double-tap a note to open it in a tab at the top
+The blue “+” next to a note: drag it to another note for an arrow; tap it for a new linked note
+Tap an arrow and drag its middle point to bend it
+Inside a note
+Type “/” on an empty line for a menu: heading, checklist, image, link, divider
+Enter starts a new line. In a checklist, Enter on an empty item leaves the list
+≡ to the left of a line: tap for a menu, drag to move the line
+Themes, sync, trash
+Themes at the top of the canvas: tap one to show only its notes
+The cloud at the top: a checkmark means everything is saved to Google Drive, blinking means saving
+Deleted notes stay in the trash for 30 days (Settings → Trash). Right after deleting you can tap “Undo”
+Keyboard shortcuts (Mac and iPad with keyboard)
+Duplicate note
+Redo
+Tabs in order
+Next / previous tab
+Zoom in / out

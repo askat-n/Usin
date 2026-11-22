@@ -18,7 +18,7 @@ private let memoryFolderID = UUID(uuidString: "00000000-0000-4000-8000-0000000A1
 func memoryFolder(nodes: [Node]) -> NoteFolder {
     let notes = nodes.filter { !$0.isRoot && $0.isForAI }
         .sorted { $0.displayTitle.localizedStandardCompare($1.displayTitle) == .orderedAscending }
-    return NoteFolder(id: memoryFolderID, name: tr("Память ИИ"), color: AIAccess.color, notes: notes, symbol: AIAccess.symbol)
+    return NoteFolder(id: memoryFolderID, name: L("Память ИИ"), color: AIAccess.color, notes: notes, symbol: AIAccess.symbol)
 }
 
 /// Папки-темы по порядку, в конце — «Без темы». Заметки внутри — по названию.
@@ -34,7 +34,7 @@ func noteFolders(nodes: [Node], themes: [Theme]) -> [NoteFolder] {
     }
     let loose = notes.filter { $0.theme == nil }
     if !loose.isEmpty || folders.isEmpty {
-        folders.append(NoteFolder(id: nil, name: tr("Без темы"), color: .secondary, notes: sorted(loose)))
+        folders.append(NoteFolder(id: nil, name: L("Без темы"), color: .secondary, notes: sorted(loose)))
     }
     return folders
 }
@@ -54,7 +54,7 @@ struct FileSidebar: View {
         let memory = memoryFolder(nodes: nodes)
         VStack(spacing: 0) {
             HStack(spacing: 2) {
-                Text(tr("Заметки").uppercased())
+                Text(L("Заметки").uppercased())
                     .font(.system(size: 11, weight: .semibold))
                     .tracking(0.6)
                     .foregroundStyle(.secondary)
@@ -64,11 +64,11 @@ struct FileSidebar: View {
                 }
                 .padding(.leading, 6)
                 Spacer()
-                SidebarIconButton(icon: "plus", help: tr("Новая заметка во вкладке (⌘T)")) {
+                SidebarIconButton(icon: "plus", help: L("Новая заметка во вкладке (⌘T)")) {
                     ws.newNoteTab()
                     onOpen()
                 }
-                SidebarIconButton(icon: "rectangle.compress.vertical", help: tr("Свернуть все")) {
+                SidebarIconButton(icon: "rectangle.compress.vertical", help: L("Свернуть все")) {
                     withAnimation(.snappy(duration: 0.2)) {
                         collapsed = Set(folders.map { $0.id ?? noThemeFolderID } + [memoryFolderID])
                     }
@@ -88,7 +88,7 @@ struct FileSidebar: View {
                     }
                     if memoryOpen {
                         if memory.notes.isEmpty {
-                            Text(tr("Здесь то, что видят ИИ-ассистенты. Отметь заметку «Для ИИ» — она появится здесь."))
+                            Text(L("Здесь то, что видят ИИ-ассистенты. Отметь заметку «Для ИИ» — она появится здесь."))
                                 .font(.system(size: 11))
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -140,7 +140,7 @@ private struct FilesModeButton: View {
             HStack(spacing: 4) {
                 Image(systemName: active ? "folder.fill" : "folder")
                     .font(.system(size: 10, weight: .semibold))
-                Text(tr("Файлы"))
+                Text(L("Файлы"))
                     .font(.system(size: 11, weight: .semibold))
             }
             .foregroundStyle(active ? Color.accentColor : Color.secondary)
@@ -152,7 +152,7 @@ private struct FilesModeButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .help(tr("Заметки как файлы"))
+        .help(L("Заметки как файлы"))
     }
 }
 
@@ -230,7 +230,7 @@ private struct NoteFileRow: View {
                 Image(systemName: AIAccess.symbol)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(AIAccess.color)
-                    .help(tr("Видна ИИ"))
+                    .help(L("Видна ИИ"))
             }
         }
         .padding(.leading, 34)
@@ -252,12 +252,12 @@ private struct NoteFileMenu: View {
     @Environment(Workspace.self) private var ws
 
     var body: some View {
-        Button { ws.open(note) } label: { Label(tr("Открыть во вкладке"), systemImage: "macwindow") }
-        Button { ws.showOnCanvas(note) } label: { Label(tr("Показать на холсте"), systemImage: "circle.hexagongrid") }
+        Button { ws.open(note) } label: { Label(L("Открыть во вкладке"), systemImage: "macwindow") }
+        Button { ws.showOnCanvas(note) } label: { Label(L("Показать на холсте"), systemImage: "circle.hexagongrid") }
         AIAccessMenuItem(node: note)
         Divider()
         Button(role: .destructive) { ws.delete(note) } label: {
-            Label(tr("Переместить в корзину"), systemImage: "trash")
+            Label(L("Переместить в корзину"), systemImage: "trash")
         }
     }
 }
@@ -284,7 +284,7 @@ struct FilesView: View {
                                 .foregroundStyle(.secondary)
                         }
                         if folder.notes.isEmpty {
-                            Text(tr("Пока нет заметок"))
+                            Text(L("Пока нет заметок"))
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                         } else {

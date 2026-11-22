@@ -16,7 +16,7 @@ struct AIAccessChip: View {
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: AIAccess.symbol).font(.system(size: 11, weight: .semibold))
-                Text(tr("Для ИИ"))
+                Text(L("Для ИИ"))
             }
             .font(.subheadline.weight(.medium))
             .foregroundStyle(node.isForAI ? AIAccess.color : Color.secondary)
@@ -27,8 +27,8 @@ struct AIAccessChip: View {
         }
         .buttonStyle(.plain)
         .help(node.isForAI
-              ? tr("ИИ-ассистенты видят эту заметку. Нажми, чтобы сделать её личной")
-              : tr("Личная заметка. Нажми, чтобы открыть её ИИ-ассистентам"))
+              ? L("ИИ-ассистенты видят эту заметку. Нажми, чтобы сделать её личной")
+              : L("Личная заметка. Нажми, чтобы открыть её ИИ-ассистентам"))
     }
 }
 
@@ -40,7 +40,7 @@ struct AIAccessMenuItem: View {
         Button {
             node.isForAI.toggle()
         } label: {
-            Label(node.isForAI ? tr("Скрыть от ИИ") : tr("Открыть для ИИ"),
+            Label(node.isForAI ? L("Скрыть от ИИ") : L("Открыть для ИИ"),
                   systemImage: node.isForAI ? "sparkles.slash" : AIAccess.symbol)
         }
     }

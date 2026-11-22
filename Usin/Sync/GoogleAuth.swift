@@ -24,8 +24,8 @@ enum SyncError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notSignedIn, .noAuthCode: tr("Войди в Google ещё раз")
-        case .noRefreshToken: tr("Google не выдал постоянный доступ — подключи Google Drive ещё раз")
+        case .notSignedIn, .noAuthCode: L("Войди в Google ещё раз")
+        case .noRefreshToken: L("Google не выдал постоянный доступ — подключи Google Drive ещё раз")
         case .server(let code, let message): "\(code): \(message)"
         }
     }

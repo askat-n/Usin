@@ -45,7 +45,7 @@ struct NodeView: View, Equatable {
                 .foregroundStyle(terminal ? Term.ink(7) : AIAccess.color)
                 .padding(node.shape == .circle ? 22 : 8)
                 .allowsHitTesting(false)
-                .help(tr("Видна ИИ"))
+                .help(L("Видна ИИ"))
         }
     }
 
@@ -71,7 +71,7 @@ struct NodeView: View, Equatable {
                     .lineLimit(1)
             }
             if editing {
-                TextField(tr("Название"), text: $node.title, axis: .vertical)
+                TextField(L("Название"), text: $node.title, axis: .vertical)
                     .textFieldStyle(.plain)
                     .focused($focused)
                     .task {

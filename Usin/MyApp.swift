@@ -50,6 +50,7 @@ import UsinTools
                 .environment(exporter)
                 #endif
                 .environment(AppSettings.shared)
+                .environment(\.locale, AppSettings.shared.language.locale)
                 .preferredColorScheme(AppSettings.shared.effectiveColorScheme)
         }
         .modelContainer(container)
@@ -83,7 +84,7 @@ struct WorkspaceCommands: Commands {
     var body: some Commands {
         #if os(macOS)
         CommandGroup(after: .appInfo) {
-            Button(tr("Проверить обновления") + "…") {
+            Button(L("Проверить обновления") + "…") {
                 Task { await Updater.shared.check(manual: true) }
             }
         }
@@ -91,70 +92,70 @@ struct WorkspaceCommands: Commands {
         #if os(iOS)
         // На Mac пункт «Настройки…» (⌘,) добавляет сцена Settings.
         CommandGroup(replacing: .appSettings) {
-            Button(tr("Настройки") + "…") { ws.showSettings = true }
+            Button(L("Настройки") + "…") { ws.showSettings = true }
                 .keyboardShortcut(",")
         }
         #endif
 
         // Файл
         CommandGroup(replacing: .newItem) {
-            Button(tr("Новая заметка")) { ws.createNodeAtViewCenter() }
+            Button(L("Новая заметка")) { ws.createNodeAtViewCenter() }
                 .keyboardShortcut("n")
-            Button(tr("Новая заметка во вкладке")) { ws.newNoteTab() }
+            Button(L("Новая заметка во вкладке")) { ws.newNoteTab() }
                 .keyboardShortcut("t")
-            Button(tr("Открыть выбранную заметку")) { ws.openSelection() }
+            Button(L("Открыть выбранную заметку")) { ws.openSelection() }
                 .keyboardShortcut(.return, modifiers: .command)
-            Button(tr("Дублировать")) { ws.duplicateSelection() }
+            Button(L("Дублировать")) { ws.duplicateSelection() }
                 .keyboardShortcut("d")
         }
         CommandGroup(replacing: .saveItem) {
             // ⌘W — как в браузере: закрывает вкладку, а на холсте — окно.
-            Button(tr("Закрыть вкладку")) { closeTabOrWindow() }
+            Button(L("Закрыть вкладку")) { closeTabOrWindow() }
                 .keyboardShortcut("w")
-            Button(tr("Вернуть закрытую вкладку")) { ws.reopenClosedTab() }
+            Button(L("Вернуть закрытую вкладку")) { ws.reopenClosedTab() }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
         }
 
         // Правка (⌘Z / ⇧⌘Z / ⌘X / ⌘C / ⌘V / ⌘A — системные)
         CommandGroup(after: .pasteboard) {
             Divider()
-            Button(tr("Переместить в корзину")) { ws.deleteSelection() }
+            Button(L("Переместить в корзину")) { ws.deleteSelection() }
                 .keyboardShortcut(.delete, modifiers: .command)
-            Button(tr("Найти…")) { ws.showAllNotes = true }
+            Button(L("Найти…")) { ws.showAllNotes = true }
                 .keyboardShortcut("f")
         }
 
-        CommandMenu(tr("Холст")) {
-            Button(tr("Все заметки…")) { ws.showAllNotes = true }
+        CommandMenu(L("Холст")) {
+            Button(L("Все заметки…")) { ws.showAllNotes = true }
                 .keyboardShortcut("k")
             Divider()
-            Button(tr("К сфере Usin")) { ws.showHome(.canvas); ws.goHome() }
+            Button(L("К сфере Usin")) { ws.showHome(.canvas); ws.goHome() }
                 .keyboardShortcut("0")
-            Button(tr("Приблизить")) { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
+            Button(L("Приблизить")) { withAnimation(.snappy) { ws.zoom(by: 1.25) } }
                 .keyboardShortcut("=")
-            Button(tr("Отдалить")) { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
+            Button(L("Отдалить")) { withAnimation(.snappy) { ws.zoom(by: 0.8) } }
                 .keyboardShortcut("-")
         }
 
         CommandGroup(before: .toolbar) {
-            Button(tr("Боковая панель")) { withAnimation(.snappy) { ws.showSidebar.toggle() } }
+            Button(L("Боковая панель")) { withAnimation(.snappy) { ws.showSidebar.toggle() } }
                 .keyboardShortcut("s", modifiers: [.command, .control])
-            Button(tr("Файлы")) { ws.showHome(.files) }
+            Button(L("Файлы")) { ws.showHome(.files) }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
             Divider()
         }
 
-        CommandMenu(tr("Вкладки")) {
-            Button(tr("Холст")) { ws.selectTab(at: 0) }
+        CommandMenu(L("Вкладки")) {
+            Button(L("Холст")) { ws.selectTab(at: 0) }
                 .keyboardShortcut("1")
             ForEach(2..<10) { i in
-                Button(tr("Вкладка") + " \(i - 1)") { ws.selectTab(at: i - 1) }
+                Button(L("Вкладка") + " \(i - 1)") { ws.selectTab(at: i - 1) }
                     .keyboardShortcut(KeyEquivalent(Character("\(i)")))
             }
             Divider()
-            Button(tr("Следующая вкладка")) { ws.cycleTab(1) }
+            Button(L("Следующая вкладка")) { ws.cycleTab(1) }
                 .keyboardShortcut("]", modifiers: [.command, .shift])
-            Button(tr("Предыдущая вкладка")) { ws.cycleTab(-1) }
+            Button(L("Предыдущая вкладка")) { ws.cycleTab(-1) }
                 .keyboardShortcut("[", modifiers: [.command, .shift])
         }
     }
