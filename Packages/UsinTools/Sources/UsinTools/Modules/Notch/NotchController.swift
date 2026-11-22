@@ -426,13 +426,14 @@ struct NotchShape: Shape {
 enum NotchMode: Equatable { case collapsed, activity, dictation, alert, expanded }
 
 enum NotchPage: String, CaseIterable, Identifiable {
-    case music, timer, translator, meeting, shelf, clips, ai
+    case music, note, timer, translator, meeting, shelf, clips, ai
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .music: return L("Сейчас играет")
+        case .note: return L("Быстрая заметка")
         case .timer: return L("Таймер")
         case .translator: return L("Переводчик")
         case .meeting: return L("Запись встречи")
@@ -445,6 +446,7 @@ enum NotchPage: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .music: return "music.note"
+        case .note: return "square.and.pencil"
         case .timer: return "timer"
         case .translator: return "character.bubble.fill"
         case .meeting: return "record.circle.fill"
@@ -1031,6 +1033,7 @@ private struct NotchExpandedView: View {
             Group {
                 switch instance.page {
                 case .music: NowPlayingPage()
+                case .note: NotchQuickNotePage(takeKeyboard: { instance.takeKeyboard() }, close: { instance.collapse() })
                 case .timer: NotchTimerPage()
                 case .translator: NotchTranslatorPage(takeKeyboard: { instance.takeKeyboard() }, close: { instance.collapse() })
                 case .meeting: MeetingPage()

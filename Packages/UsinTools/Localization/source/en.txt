@@ -516,3 +516,25 @@ Saved
 Paste the key
 Nothing copied yet
 Nothing found
+No text field — save to a note
+The text stays on the clipboard and is added to the Usin note “Dictations”.
+Dictation
+Save to Usin Note
+Let others know you're recording: in some countries it's required by law. The transcript appears as a Usin note and grows as the meeting goes on. Voice is processed on this Mac.
+Save to
+Usin Note
+Notes App
+Open in Usin
+Save to Usin
+Use “For AI” notes
+Notes marked “For AI”: %lld
+AI editing of dictation receives up to 4,000 characters from notes marked “For AI”, so it spells names, terms and project titles correctly. Other notes are never sent anywhere.
+Quick Note
+Quick note…
+Saved to Usin
+Enter saves to Usin, ⌥Enter adds a line. The first line becomes the title.
+No text field — text saved to “Dictations”
+Dictations
+From Clipboard
+Clipboard Image
+to note

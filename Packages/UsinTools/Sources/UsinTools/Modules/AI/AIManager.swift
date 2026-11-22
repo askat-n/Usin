@@ -329,6 +329,9 @@ final class AIManager: ObservableObject {
         }
     }
 
+    /// Сколько знаков из заметок «Для ИИ» уходит в запрос: хватает на имена и проекты, а запрос остаётся дешёвым.
+    static let notesLimit = 4000
+
     private func keyAccount(_ provider: AIProvider) -> String { "\(provider.rawValue).key" }
     private func adminAccount(_ provider: AIProvider) -> String { "\(provider.rawValue).admin" }
 

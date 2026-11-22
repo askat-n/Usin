@@ -26,6 +26,13 @@ struct Meeting: Codable, Identifiable, Equatable {
         lines.map { "[\(Self.time($0.seconds))] \($0.isMe ? L("Я") : L("Собеседники")): \($0.text)" }.joined(separator: "\n")
     }
 
+    /// Заметка Usin с расшифровкой: у встречи своя заметка, она дописывается по ходу записи.
+    var toolNote: ToolNote {
+        ToolNote(id: id, title: title, lines: lines.map {
+            "\(Self.time($0.seconds)) \($0.isMe ? L("Я") : L("Собеседники")): \($0.text)"
+        })
+    }
+
     static func time(_ seconds: Double) -> String {
         let total = Int(seconds)
         return String(format: "%02d:%02d", total / 60, total % 60)
@@ -353,11 +360,27 @@ final class MeetingRecorder: ObservableObject {
         guard let meeting = current else { return }
         lastNotesSync = Date()
         notesDirty = false
+        writeNote(meeting)
+    }
+
+    /// Расшифровка — заметкой Usin или в приложение «Заметки», как выбрано в настройках.
+    private func writeNote(_ meeting: Meeting) {
+        guard AppSettings.shared.meetingsTarget == "apple" else {
+            _ = ToolsHost.writeNote(meeting.toolNote, .replace)
+            notesStatus = nil
+            return
+        }
         NotesBridge.save(meeting) { [weak self] result in
             DispatchQueue.main.async {
                 MainActor.assumeIsolated { self?.applyNotesResult(result, meetingID: meeting.id) }
             }
         }
+    }
+
+    /// Записи, сделанные раньше (в Singluse или в «Заметки»), можно перенести в Usin кнопкой.
+    func saveToUsin(_ meeting: Meeting) {
+        _ = ToolsHost.writeNote(meeting.toolNote, .replace)
+        objectWillChange.send()
     }
 
     private func applyNotesResult(_ result: Result<String, Error>, meetingID: UUID) {
@@ -409,10 +432,6 @@ final class MeetingRecorder: ObservableObject {
         isFinishing = false
         meetings.insert(meeting, at: 0)
         save(meeting)
-        NotesBridge.save(meeting) { [weak self] result in
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated { self?.applyNotesResult(result, meetingID: meeting.id) }
-            }
-        }
+        writeNote(meeting)
     }
 }

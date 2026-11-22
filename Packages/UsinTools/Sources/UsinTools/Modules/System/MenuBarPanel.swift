@@ -277,6 +277,7 @@ struct MenuBarPanelView: View {
         .scrollBounceBehavior(.basedOnSize)
         .frame(maxHeight: state.maxListHeight)
         QuickActions(monitor: monitor, keepAwake: keepAwake, state: state, close: actions.close)
+        MenuBarQuickNote()
         Divider().padding(.horizontal, 4)
         VStack(spacing: 0) {
             MenuRow(title: "Новая заметка") {

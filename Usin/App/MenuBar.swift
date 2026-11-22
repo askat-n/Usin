@@ -24,6 +24,7 @@ final class StatusItemController: NSObject {
         ToolsHost.newNote = { [weak self] in self?.newNote() }
         ToolsHost.openSettings = { [weak self] page in self?.openSettings(page.map { .tool($0) }) }
         ToolsHost.checkForUpdates = { Task { await Updater.shared.check(manual: true) } }
+        workspace?.installToolNotes()
 
         ToolsRuntime.start()
         update()
@@ -47,7 +48,7 @@ final class StatusItemController: NSObject {
     }
 
     /// Окно с холстом: вывести вперёд, а если его закрыли — открыть заново.
-    private func showWindow() {
+    func showWindow() {
         NSApp.activate()
         if let window = MainWindow.current {
             if window.isMiniaturized { window.deminiaturize(nil) }

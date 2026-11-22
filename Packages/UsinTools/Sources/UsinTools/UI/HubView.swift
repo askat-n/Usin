@@ -918,6 +918,10 @@ private struct DictationPage: View {
                 }
                 Toggle("Вставлять текст сразу", isOn: $settings.dictationInstant)
                 Toggle("Короткий звук в начале и в конце", isOn: $settings.dictationSound)
+                Toggle(isOn: $settings.dictationToNote) {
+                    Text("Без поля ввода — в заметку")
+                    Text("Текст остаётся в буфере и дописывается в заметку Usin «Диктовки».")
+                }
             } header: {
                 Text("Управление")
             } footer: {
@@ -1123,6 +1127,14 @@ private struct DictationRow: View {
     let entry: DictationEntry
     @ObservedObject private var dictation = Coordinator.shared.dictation
     @State private var hovering = false
+    @State private var savedToNote = false
+
+    private func flash() {
+        withAnimation(Motion.hover) { savedToNote = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(Motion.hover) { savedToNote = false }
+        }
+    }
 
     var body: some View {
         HStack(alignment: .top) {
@@ -1141,6 +1153,11 @@ private struct DictationRow: View {
             Spacer()
             HStack(spacing: 10) {
                 Button {
+                    let note = ToolNote(title: ToolNote.title(from: entry.text, fallback: L("Диктовка")), lines: [entry.text])
+                    if ToolsHost.writeNote(note, .replace) != nil { flash() }
+                } label: { Image(systemName: savedToNote ? "checkmark.circle.fill" : "square.and.pencil") }
+                .help("В заметку Usin")
+                Button {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(entry.text, forType: .string)
                 } label: { Image(systemName: "doc.on.doc") }
@@ -1150,7 +1167,7 @@ private struct DictationRow: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
-            .opacity(hovering ? 1 : 0)
+            .opacity(hovering || savedToNote ? 1 : 0)
         }
         .onHover { hovering = $0 }
         .animation(Motion.hover, value: hovering)
@@ -1162,6 +1179,7 @@ private struct DictationRow: View {
 private struct MeetingsPage: View {
     @ObservedObject private var meetings = Coordinator.shared.meetings
     @ObservedObject private var whisper = Coordinator.shared.whisper
+    @ObservedObject private var settings = AppSettings.shared
     @State private var opened: Meeting?
 
     var body: some View {
@@ -1194,7 +1212,18 @@ private struct MeetingsPage: View {
                     Label(status, systemImage: "exclamationmark.triangle.fill").font(.caption).foregroundStyle(.orange)
                 }
             } footer: {
-                Text("Предупреждайте собеседников о записи: в некоторых странах это обязательно по закону. Заметки сохраняются в папку «\(NotesBridge.folderName)». Голос обрабатывается на этом Mac.")
+                if settings.meetingsTarget == "apple" {
+                    Text("Предупреждайте собеседников о записи: в некоторых странах это обязательно по закону. Заметки сохраняются в папку «\(NotesBridge.folderName)». Голос обрабатывается на этом Mac.")
+                } else {
+                    Text("Предупреждайте собеседников о записи: в некоторых странах это обязательно по закону. Расшифровка появляется заметкой в Usin и дописывается по ходу встречи. Голос обрабатывается на этом Mac.")
+                }
+            }
+
+            Section {
+                Picker("Куда сохранять", selection: $settings.meetingsTarget) {
+                    Text("Заметка Usin").tag("usin")
+                    Text("Приложение «Заметки»").tag("apple")
+                }
             }
 
             if let current = meetings.current, !current.lines.isEmpty {
@@ -1271,6 +1300,14 @@ private struct MeetingSheet: View {
                 Button("Скопировать текст") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(meeting.plainText, forType: .string)
+                }
+                if ToolsHost.hasNote(meeting.id) {
+                    Button("Открыть в Usin") {
+                        dismiss()
+                        ToolsHost.openNote(meeting.id)
+                    }
+                } else {
+                    Button("Сохранить в Usin") { meetings.saveToUsin(meeting) }
                 }
                 if let note = meeting.noteID {
                     Button("Открыть в Заметках") { NotesBridge.show(noteID: note) }
@@ -1577,6 +1614,7 @@ private struct NotchPage_: View {
 
 private struct AIPage: View {
     @ObservedObject private var ai = Coordinator.shared.ai
+    @ObservedObject private var settings = AppSettings.shared
     @State private var limitsFor: AIProvider?
 
     var body: some View {
@@ -1585,6 +1623,14 @@ private struct AIPage: View {
                 Text("Ключи хранятся в Связке ключей этого Mac и отправляются только в сам сервис. Войдите на странице лимитов один раз, и чёлка будет показывать лимиты подписки сама. Траты API считаются по официальным отчётам.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
+            }
+            Section {
+                Toggle(isOn: $settings.aiUseNotes) {
+                    Text("Учитывать заметки «Для ИИ»")
+                    Text("Отмечено заметок «Для ИИ»: \(ToolsHost.notesForAI(0).count)")
+                }
+            } footer: {
+                Text("ИИ-редактура диктовки получает до 4000 знаков из заметок, отмеченных «Для ИИ», — так она верно пишет имена, термины и названия проектов. Остальные заметки никуда не отправляются.")
             }
             ForEach(AIProvider.allCases) { provider in
                 AIProviderSection(provider: provider, limitsFor: $limitsFor)

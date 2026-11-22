@@ -516,3 +516,25 @@ Nạp vào bộ nhớ
 Dán khóa
 Chưa sao chép gì
 Không tìm thấy gì
+Không có ô nhập — lưu vào ghi chú
+Văn bản vẫn ở bảng nhớ tạm và được thêm vào ghi chú Usin “Đọc chính tả”.
+Đọc chính tả
+Lưu vào ghi chú Usin
+Hãy báo cho người khác biết bạn đang ghi âm: ở một số quốc gia đây là quy định bắt buộc. Bản ghi xuất hiện thành ghi chú Usin và được bổ sung trong suốt cuộc họp. Giọng nói được xử lý trên máy Mac này.
+Lưu vào
+Ghi chú Usin
+Ứng dụng Ghi chú
+Mở trong Usin
+Lưu vào Usin
+Dùng ghi chú “Cho AI”
+Ghi chú được đánh dấu “Cho AI”: %lld
+Tính năng biên tập bằng AI cho đọc chính tả nhận tối đa 4.000 ký tự từ các ghi chú được đánh dấu “Cho AI”, để viết đúng tên, thuật ngữ và tên dự án. Các ghi chú khác không được gửi đi đâu.
+Ghi chú nhanh
+Ghi chú nhanh…
+Đã lưu vào Usin
+Enter để lưu vào Usin, ⌥Enter để xuống dòng. Dòng đầu tiên sẽ thành tiêu đề.
+Không có ô nhập, văn bản đã vào “Đọc chính tả”
+Đọc chính tả
+Từ bảng nhớ tạm
+Ảnh từ bảng nhớ tạm
+vào ghi chú

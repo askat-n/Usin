@@ -142,7 +142,7 @@ final class Workspace {
         open(node)
     }
 
-    private func viewCenterPoint() -> CGPoint {
+    func viewCenterPoint() -> CGPoint {
         CGPoint(
             x: -offset.width / scale + .random(in: -120...120),
             y: -offset.height / scale + .random(in: 130...200)

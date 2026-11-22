@@ -140,6 +140,23 @@ final class ClipboardController: ObservableObject {
         return rep.representation(using: .png, properties: [:])
     }
 
+    /// Запись буфера — заметкой Usin: текст, картинка или список файлов.
+    @discardableResult
+    func saveToNote(_ item: ClipItem) -> Bool {
+        let note: ToolNote
+        switch item.content {
+        case .text(let text):
+            note = ToolNote(title: ToolNote.title(from: text, fallback: L("Из буфера обмена")),
+                            lines: text.components(separatedBy: .newlines))
+        case .image(let file, _):
+            let data = try? Data(contentsOf: Self.imagesDirectory.appendingPathComponent(file))
+            note = ToolNote(title: L("Картинка из буфера"), lines: [], image: data)
+        case .files(let paths):
+            note = ToolNote(title: ClipFormat.title(item), lines: paths)
+        }
+        return ToolsHost.writeNote(note, .replace) != nil
+    }
+
     func image(for item: ClipItem) -> NSImage? {
         guard case .image(let file, _) = item.content else { return nil }
         return NSImage(contentsOf: Self.imagesDirectory.appendingPathComponent(file))
@@ -327,6 +344,10 @@ final class ClipboardController: ObservableObject {
         case kVK_Return, kVK_ANSI_KeypadEnter:
             if items.indices.contains(selectedIndex) { paste(items[selectedIndex]) }
             return true
+        case kVK_ANSI_S where event.modifierFlags.contains(.command):
+            // ⌘S — выбранная запись становится заметкой Usin, панель закрывается.
+            if items.indices.contains(selectedIndex), saveToNote(items[selectedIndex]) { closePanel() }
+            return true
         default:
             // ⌘1…⌘9 — мгновенная вставка записи по номеру.
             if event.modifierFlags.contains(.command), let digit = event.charactersIgnoringModifiers.flatMap(Int.init), digit >= 1, digit <= 9 {
@@ -389,6 +410,7 @@ struct ClipboardPanelView: View {
                 hint("↩", L("вставить"))
                 hint("↑↓", L("выбрать"))
                 hint("⌘1–9", L("быстро"))
+                hint("⌘S", L("в заметку"))
                 Spacer()
                 hint("esc", L("закрыть"))
             }
@@ -417,6 +439,7 @@ struct ClipRow: View {
     let isSelected: Bool
     @ObservedObject var controller: ClipboardController
     @State private var hovering = false
+    @State private var savedToNote = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -433,6 +456,19 @@ struct ClipRow: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(item.pinned ? Color.orange : .secondary)
                 .help(item.pinned ? "Открепить" : "Закрепить")
+            }
+            if hovering || savedToNote {
+                Button {
+                    if controller.saveToNote(item) {
+                        withAnimation(Motion.hover) { savedToNote = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation(Motion.hover) { savedToNote = false }
+                        }
+                    }
+                } label: { Image(systemName: savedToNote ? "checkmark.circle.fill" : "square.and.pencil") }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(savedToNote ? Color.green : .secondary)
+                    .help("В заметку Usin")
             }
             if hovering {
                 Button { controller.remove(item) } label: { Image(systemName: "trash") }

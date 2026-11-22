@@ -2,6 +2,38 @@ import AppKit
 import Combine
 import Foundation
 
+/// Заметка Usin, которую пишут инструменты: встреча, диктовка, запись из буфера, быстрая заметка.
+public struct ToolNote: Sendable {
+    public enum Mode: Sendable {
+        /// Весь текст заново (встреча дописывается по ходу). Заметку из корзины не возвращаем.
+        case replace
+        /// Строки добавляются в конец (заметка «Диктовки»). Если её удалили — появится новая.
+        case append
+    }
+
+    /// Встреча пишет всегда в свою заметку — так она обновляется, а не множится.
+    public var id: UUID
+    public var title: String
+    public var lines: [String]
+    /// Картинка из буфера обмена (PNG).
+    public var image: Data?
+
+    public init(id: UUID = UUID(), title: String, lines: [String], image: Data? = nil) {
+        self.id = id
+        self.title = title
+        self.lines = lines
+        self.image = image
+    }
+
+    /// Название из первых слов текста.
+    static func title(from text: String, fallback: String) -> String {
+        let first = text.split(whereSeparator: \.isNewline).first.map(String.init)?
+            .trimmingCharacters(in: .whitespaces) ?? ""
+        guard !first.isEmpty else { return fallback }
+        return first.count > 60 ? String(first.prefix(57)) + "…" : first
+    }
+}
+
 /// Что инструменты просят у приложения Usin: открыть окно, заметку, настройки, проверить обновления.
 /// Приложение заполняет эти действия при запуске.
 @MainActor
@@ -11,6 +43,15 @@ public enum ToolsHost {
     /// `nil` — просто окно настроек, иначе нужная страница инструмента.
     public static var openSettings: (ToolPage?) -> Void = { _ in }
     public static var checkForUpdates: () -> Void = {}
+
+    /// Создать заметку или обновить её. Возвращает id заметки, в которую записано (`nil` — не записано).
+    public static var writeNote: (ToolNote, ToolNote.Mode) -> UUID? = { _, _ in nil }
+    /// Есть ли такая заметка (не в корзине).
+    public static var hasNote: (UUID) -> Bool = { _ in false }
+    /// Открыть заметку во вкладке Usin.
+    public static var openNote: (UUID) -> Void = { _ in }
+    /// Заметки, отмеченные «Для ИИ», одним текстом не длиннее `limit` знаков, и сколько их всего.
+    public static var notesForAI: (_ limit: Int) -> (text: String, count: Int) = { _ in ("", 0) }
 }
 
 /// Запуск инструментов Mac внутри Usin.

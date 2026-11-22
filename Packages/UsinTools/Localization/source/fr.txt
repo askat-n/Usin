@@ -516,3 +516,25 @@ Enregistrée
 Collez la clé
 Rien n’a encore été copié
 Aucun résultat
+Sans champ de texte — dans une note
+Le texte reste dans le presse-papiers et s’ajoute à la note Usin « Dictées ».
+Dictée
+Enregistrer dans une note Usin
+Prévenez les participants que vous enregistrez : c’est obligatoire dans certains pays. La transcription apparaît comme une note Usin et se complète pendant la réunion. La voix est traitée sur ce Mac.
+Enregistrer dans
+Note Usin
+App Notes
+Ouvrir dans Usin
+Enregistrer dans Usin
+Utiliser les notes « Pour l’IA »
+Notes marquées « Pour l’IA » : %lld
+La correction IA de la dictée reçoit jusqu’à 4 000 caractères des notes marquées « Pour l’IA », pour bien écrire les noms, termes et projets. Les autres notes ne sont envoyées nulle part.
+Note rapide
+Note rapide…
+Enregistré dans Usin
+Entrée enregistre dans Usin, ⌥Entrée ajoute une ligne. La première ligne devient le titre.
+Pas de champ de texte : texte dans « Dictées »
+Dictées
+Depuis le presse-papiers
+Image du presse-papiers
+en note

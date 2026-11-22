@@ -516,3 +516,25 @@ Guardada
 Pega la clave
 Aún no has copiado nada
 No se encontró nada
+Sin campo de texto — a una nota
+El texto queda en el portapapeles y se añade a la nota de Usin «Dictados».
+Dictado
+Guardar en nota de Usin
+Avisa a los demás de que estás grabando: en algunos países es obligatorio por ley. La transcripción aparece como nota de Usin y se completa durante la reunión. La voz se procesa en este Mac.
+Guardar en
+Nota de Usin
+App Notas
+Abrir en Usin
+Guardar en Usin
+Usar notas «Para IA»
+Notas marcadas «Para IA»: %lld
+La edición con IA del dictado recibe hasta 4000 caracteres de las notas marcadas «Para IA», para escribir bien nombres, términos y proyectos. Las demás notas no se envían a ningún sitio.
+Nota rápida
+Nota rápida…
+Guardado en Usin
+Enter guarda en Usin, ⌥Enter añade una línea. La primera línea será el título.
+No hay campo de texto: texto en «Dictados»
+Dictados
+Del portapapeles
+Imagen del portapapeles
+a nota

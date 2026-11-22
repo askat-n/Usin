@@ -516,3 +516,25 @@ Naka-save
 I-paste ang key
 Wala pang nakopya
 Walang nahanap
+Walang text field — sa tala
+Nananatili ang teksto sa clipboard at idinadagdag sa tala ng Usin na “Mga dikta”.
+Dikta
+I-save sa tala ng Usin
+Ipaalam sa iba na nagre-record ka: sa ilang bansa, iniaatas ito ng batas. Lumalabas ang transcript bilang tala sa Usin at nadadagdagan habang tumatakbo ang meeting. Pinoproseso ang boses sa Mac na ito.
+I-save sa
+Tala ng Usin
+Notes app
+Buksan sa Usin
+I-save sa Usin
+Gamitin ang mga talang “Para sa AI”
+Mga talang may markang “Para sa AI”: %lld
+Tumatanggap ang AI editing ng dikta ng hanggang 4,000 character mula sa mga talang may markang “Para sa AI”, para tama ang baybay ng mga pangalan, termino at proyekto. Hindi ipinapadala kahit saan ang ibang tala.
+Mabilis na tala
+Mabilis na tala…
+Na-save sa Usin
+Enter para i-save sa Usin, ⌥Enter para sa bagong linya. Ang unang linya ang magiging pamagat.
+Walang text field, nasa “Mga dikta” ang teksto
+Mga dikta
+Mula sa clipboard
+Larawan mula sa clipboard
+sa tala

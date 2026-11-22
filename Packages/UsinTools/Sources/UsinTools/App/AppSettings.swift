@@ -209,6 +209,17 @@ final class AppSettings: ObservableObject {
     @Published var dictationSecondLanguage: String { didSet { d.set(dictationSecondLanguage, forKey: "dictationSecondLanguage") } }
     @Published var dictationInstant: Bool { didSet { d.set(dictationInstant, forKey: "dictationInstant") } }
     @Published var dictationKeepHistory: Bool { didSet { d.set(dictationKeepHistory, forKey: "dictationKeepHistory") } }
+    /// Нет поля ввода — диктовка дописывается и в заметку Usin «Диктовки».
+    @Published var dictationToNote: Bool { didSet { d.set(dictationToNote, forKey: "dictationToNote") } }
+    /// Заметка «Диктовки», куда идут такие диктовки.
+    var dictationNoteID: UUID? {
+        get { d.string(forKey: "dictationNoteID").flatMap(UUID.init(uuidString:)) }
+        set { d.set(newValue?.uuidString, forKey: "dictationNoteID") }
+    }
+    /// Куда сохраняется расшифровка встречи: "usin" — заметкой Usin, "apple" — в приложение «Заметки».
+    @Published var meetingsTarget: String { didSet { d.set(meetingsTarget, forKey: "meetingsTarget") } }
+    /// ИИ-сервисы видят заметки, отмеченные «Для ИИ» (имена, термины, проекты).
+    @Published var aiUseNotes: Bool { didSet { d.set(aiUseNotes, forKey: "aiUseNotes") } }
     /// Стиль по приложениям: идентификатор приложения → WritingStyle.
     @Published var appStyles: [String: String] { didSet { d.set(appStyles, forKey: "appStyles") } }
 
@@ -279,6 +290,9 @@ final class AppSettings: ObservableObject {
         "dictationMic": "",
         "dictationSound": true,
         "dictationKeepHistory": true,
+        "dictationToNote": false,
+        "meetingsTarget": "usin",
+        "aiUseNotes": true,
         "dictationInstant": true,
         "appStyles": [
             "com.apple.mail": "business",
@@ -299,7 +313,7 @@ final class AppSettings: ObservableObject {
         "clipRetentionDays": 0,
         "clipHotkey": 0,
         "notchAllDisplays": true,
-        "notchPages": ["music", "timer", "translator", "meeting", "shelf", "clips", "ai"],
+        "notchPages": ["music", "note", "timer", "translator", "meeting", "shelf", "clips", "ai"],
         "timerPresets": [5, 10, 20],
         "timerSound": "Glass",
         "translatorLanguages": ["ru", "en"],
@@ -347,6 +361,9 @@ final class AppSettings: ObservableObject {
         dictationMic = d.string(forKey: "dictationMic") ?? ""
         dictationSound = d.bool(forKey: "dictationSound")
         dictationKeepHistory = d.bool(forKey: "dictationKeepHistory")
+        dictationToNote = d.bool(forKey: "dictationToNote")
+        meetingsTarget = d.string(forKey: "meetingsTarget") ?? "usin"
+        aiUseNotes = d.bool(forKey: "aiUseNotes")
         dictationInstant = d.bool(forKey: "dictationInstant")
         appStyles = d.dictionary(forKey: "appStyles") as? [String: String] ?? [:]
         if let second = d.string(forKey: "dictationSecondLanguage") {
@@ -399,6 +416,12 @@ final class AppSettings: ObservableObject {
                 profile.acceleration = min(profile.acceleration, 0.2)
                 return profile
             }
+        }
+        // Страница «Заметка» (Usin) появляется сама, остальной выбор человека не меняется.
+        if !d.bool(forKey: "usinNotePage") {
+            d.set(true, forKey: "usinNotePage")
+            let order = NotchPage.allCases.map(\.rawValue)
+            notchPages = order.filter { notchPages.contains($0) || $0 == "note" }
         }
         // Новые страницы чёлки появляются сами, остальной выбор человека не меняется.
         if !d.bool(forKey: "migratedV4") {
