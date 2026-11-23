@@ -18,7 +18,12 @@ import UsinTools
         let container: ModelContainer
         do {
             // На Mac приложение без песочницы: своя папка, иначе база легла бы в общую Application Support.
+            // У «Usin Beta» своя папка — настоящие заметки она не видит.
+            #if os(macOS)
+            let folder = AppIdentity.supportDirectory
+            #else
             let folder = URL.applicationSupportDirectory.appending(path: "Usin", directoryHint: .isDirectory)
+            #endif
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let config = ModelConfiguration(url: folder.appending(path: "Usin.store"))
             container = try ModelContainer(for: Node.self, NoteBlock.self, Connection.self, Theme.self,
@@ -36,7 +41,11 @@ import UsinTools
             try? container.mainContext.save()
             ToolsRuntime.willTerminate()
         }
-        Updater.shared.start()
+        // Бета собирается из кода и не обновляется сама; обычный Usin просит переехать в «Программы».
+        if !AppIdentity.isBeta {
+            Updater.shared.start()
+            AppMover.offerMoveIfNeeded()
+        }
         StatusItemController.shared.workspace = workspace
         #endif
     }

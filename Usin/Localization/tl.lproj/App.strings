@@ -236,3 +236,11 @@
 "Вкладки по порядку" = "Mga tab ayon sa pagkakasunod";
 "Следующая / предыдущая вкладка" = "Susunod / nakaraang tab";
 "Приблизить / отдалить" = "Mag-zoom in / out";
+
+/* Перенос в «Программы» */
+"Перенести Usin в «Программы»?" = "Ilipat ang Usin sa Applications?";
+"Так Usin останется на Mac, будет обновляться сам, а скачанный образ можно будет удалить." = "Mananatili ang Usin sa iyong Mac at mag-a-update nang kusa, at puwede mo nang burahin ang na-download na disk image.";
+"Перенести" = "Ilipat";
+"Не сейчас" = "Hindi Ngayon";
+"Не удалось перенести Usin" = "Hindi mailipat ang Usin";
+"Перетащи Usin в папку «Программы» сам." = "I-drag ang Usin sa folder na Applications.";

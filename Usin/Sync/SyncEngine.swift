@@ -4,6 +4,7 @@ import SwiftUI
 import AuthenticationServices
 #if os(macOS)
 import AppKit
+import UsinTools
 #endif
 
 /// Синхронизация заметок через скрытую папку приложения на Google Drive.
@@ -437,8 +438,12 @@ final class SyncEngine {
     // MARK: - Local state
 
     private static var supportDir: URL {
+        #if os(macOS)
+        let dir = AppIdentity.supportDirectory
+        #else
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Usin", isDirectory: true)
+        #endif
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

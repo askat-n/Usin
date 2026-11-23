@@ -236,3 +236,11 @@
 "Вкладки по порядку" = "Onglets dans l'ordre";
 "Следующая / предыдущая вкладка" = "Onglet suivant / précédent";
 "Приблизить / отдалить" = "Zoom avant / arrière";
+
+/* Перенос в «Программы» */
+"Перенести Usin в «Программы»?" = "Déplacer Usin dans Applications ?";
+"Так Usin останется на Mac, будет обновляться сам, а скачанный образ можно будет удалить." = "Usin restera sur votre Mac, se mettra à jour tout seul, et vous pourrez supprimer l’image téléchargée.";
+"Перенести" = "Déplacer";
+"Не сейчас" = "Plus tard";
+"Не удалось перенести Usin" = "Impossible de déplacer Usin";
+"Перетащи Usin в папку «Программы» сам." = "Faites glisser Usin dans le dossier Applications.";

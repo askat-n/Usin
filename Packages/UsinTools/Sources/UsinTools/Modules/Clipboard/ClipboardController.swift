@@ -43,8 +43,7 @@ final class ClipboardController: ObservableObject {
     private static let maxImageBytes = 20 * 1024 * 1024
 
     private static var directory: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("Usin", isDirectory: true)
+        AppIdentity.supportDirectory
     }
     private static var imagesDirectory: URL { directory.appendingPathComponent("ClipImages", isDirectory: true) }
     private static var historyFile: URL { directory.appendingPathComponent("clipboard.json") }

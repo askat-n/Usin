@@ -236,3 +236,11 @@
 "Вкладки по порядку" = "Tabs in order";
 "Следующая / предыдущая вкладка" = "Next / previous tab";
 "Приблизить / отдалить" = "Zoom in / out";
+
+/* Перенос в «Программы» */
+"Перенести Usin в «Программы»?" = "Move Usin to Applications?";
+"Так Usin останется на Mac, будет обновляться сам, а скачанный образ можно будет удалить." = "Usin will stay on your Mac and update itself, and you can delete the downloaded disk image.";
+"Перенести" = "Move";
+"Не сейчас" = "Not Now";
+"Не удалось перенести Usin" = "Couldn’t move Usin";
+"Перетащи Usin в папку «Программы» сам." = "Drag Usin to the Applications folder yourself.";

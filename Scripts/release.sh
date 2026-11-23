@@ -1,6 +1,7 @@
 #!/bin/zsh
-# Выпустить новую версию Usin для Mac: собрать, упаковать в zip и выложить релиз на GitHub.
-# Автообновление в приложении берёт последний релиз отсюда и ставит zip из него.
+# Выпустить новую версию Usin для Mac: собрать, упаковать и выложить релиз на GitHub.
+# В релизе два файла: Usin-<версия>.dmg — скачать и перетащить в «Программы»,
+# и Usin-<версия>.zip — его берёт автообновление внутри приложения.
 #
 #   1. Подними MARKETING_VERSION в Xcode (Usin → General → Version), например 0.2.0.
 #   2. Scripts/release.sh "Что нового: …"
@@ -47,8 +48,10 @@ BUILT="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Con
 
 ZIP="$BUILD/Usin-$VERSION.zip"
 ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+DMG="$BUILD/Usin-$VERSION.dmg"
+"$ROOT/Scripts/make-dmg.sh" "$APP" "$DMG" 2>/dev/null
 
 git push origin HEAD
-gh release create "$TAG" "$ZIP" --repo "$REPO" --target "$(git rev-parse HEAD)" \
+gh release create "$TAG" "$DMG" "$ZIP" --repo "$REPO" --target "$(git rev-parse HEAD)" \
     --title "Usin $VERSION" --notes "$NOTES"
 echo "Готово: https://github.com/$REPO/releases/tag/$TAG"

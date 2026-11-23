@@ -73,7 +73,8 @@ public enum ToolsRuntime {
 
     /// Вызывается один раз при запуске Usin.
     public static func start() {
-        SingluseImport.runIfNeeded()
+        // Бета не переносит данные Singluse: они ушли бы в папку настоящего Usin.
+        if !AppIdentity.isBeta { SingluseImport.runIfNeeded() }
         if isSingluseRunning {
             state.waitingForSingluse = true
             // Singluse живёт только в строке меню, а о закрытии таких приложений NSWorkspace
@@ -115,7 +116,7 @@ public enum ToolsRuntime {
     public static func setMenuBarVisible(_ visible: Bool) {
         // Панель читает настройки инструментов: сначала перенос из Singluse, иначе первый запуск
         // увидел бы настройки по умолчанию.
-        SingluseImport.runIfNeeded()
+        if !AppIdentity.isBeta { SingluseImport.runIfNeeded() }
         menuBarWanted = visible
         applyMenuBar()
     }
@@ -130,8 +131,12 @@ public enum ToolsRuntime {
 
     // MARK: - Singluse
 
+    /// Инструменты уже работают в другом приложении. Для беты это ещё и настоящий Usin:
+    /// иначе горячие клавиши, чёлка и буфер обмена сработали бы дважды.
     static var isSingluseRunning: Bool {
-        !NSRunningApplication.runningApplications(withBundleIdentifier: singluseBundleID).isEmpty
+        var ids = [singluseBundleID]
+        if AppIdentity.isBeta { ids.append(AppIdentity.releaseBundleID) }
+        return ids.contains { !NSRunningApplication.runningApplications(withBundleIdentifier: $0).isEmpty }
     }
 
     public static func quitSingluse() {
