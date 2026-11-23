@@ -13,28 +13,27 @@ func render(scale: CGFloat, to url: URL) {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
-    let bg = NSGradient(starting: NSColor(calibratedRed: 0.97, green: 0.97, blue: 0.98, alpha: 1),
-                        ending: NSColor(calibratedRed: 0.90, green: 0.91, blue: 0.94, alpha: 1))!
-    bg.draw(in: NSRect(origin: .zero, size: size), angle: -90)
+    NSColor.white.setFill()
+    NSRect(origin: .zero, size: size).fill()
 
-    // Стрелка между значками (значки стоят в x=150 и x=450, y=190 сверху → 210 снизу).
-    let y: CGFloat = 400 - 190
+    // Большая стрелка между значками (значки по центру x=150 и x=450, y=200 сверху → 200 снизу).
+    let y: CGFloat = 400 - 200
+    let ink = NSColor(srgbRed: 0x25 / 255.0, green: 0x63 / 255.0, blue: 0xEB / 255.0, alpha: 1)
     let arrow = NSBezierPath()
-    arrow.move(to: NSPoint(x: 240, y: y))
-    arrow.curve(to: NSPoint(x: 350, y: y), controlPoint1: NSPoint(x: 280, y: y + 22), controlPoint2: NSPoint(x: 315, y: y + 22))
-    arrow.lineWidth = 5
-    arrow.lineCapStyle = .round
-    let ink = NSColor(calibratedRed: 0.36, green: 0.39, blue: 0.47, alpha: 0.85)
+    arrow.move(to: NSPoint(x: 236, y: y + 9))
+    arrow.line(to: NSPoint(x: 328, y: y + 9))
+    arrow.line(to: NSPoint(x: 328, y: y + 30))
+    arrow.line(to: NSPoint(x: 368, y: y))
+    arrow.line(to: NSPoint(x: 328, y: y - 30))
+    arrow.line(to: NSPoint(x: 328, y: y - 9))
+    arrow.line(to: NSPoint(x: 236, y: y - 9))
+    arrow.close()
+    arrow.lineJoinStyle = .round
+    arrow.lineWidth = 6
+    ink.setFill()
     ink.setStroke()
+    arrow.fill()
     arrow.stroke()
-    let head = NSBezierPath()
-    head.move(to: NSPoint(x: 336, y: y + 15))
-    head.line(to: NSPoint(x: 352, y: y))
-    head.line(to: NSPoint(x: 334, y: y - 9))
-    head.lineWidth = 5
-    head.lineCapStyle = .round
-    head.lineJoinStyle = .round
-    head.stroke()
 
     let style = NSMutableParagraphStyle()
     style.alignment = .center
@@ -46,8 +45,9 @@ func render(scale: CGFloat, to url: URL) {
         ]
         NSString(string: s).draw(in: NSRect(x: 0, y: y, width: 600, height: size * 1.5), withAttributes: attrs)
     }
-    text("Перетащи Usin в «Программы»", y: 400 - 72, size: 20, weight: .semibold, alpha: 0.9)
-    text("Drag Usin to Applications", y: 400 - 98, size: 14, weight: .regular, alpha: 0.55)
+    text("Перетащи Usin в «Программы»", y: 400 - 70, size: 20, weight: .semibold, alpha: 0.9)
+    text("Drag Usin to Applications", y: 400 - 96, size: 14, weight: .regular, alpha: 0.55)
+    text("Потом открой Usin из «Программ» · Then open Usin from Applications", y: 46, size: 12, weight: .regular, alpha: 0.45)
 
     NSGraphicsContext.restoreGraphicsState()
     try! rep.representation(using: .png, properties: [:])!.write(to: url)

@@ -1,4 +1,4 @@
-// Значок Usin: белый фон, белый круг с чёрной обводкой и большая «U» посередине.
+// Значок Usin: белый фон и посередине синяя сфера — как большой круг на холсте.
 //   swift Scripts/icon/make-icon.swift   (перерисовывает Usin/Assets.xcassets/AppIcon.appiconset)
 import AppKit
 
@@ -39,24 +39,27 @@ func draw(px: Int, mac: Bool) -> Data {
         tile.fill()
     }
 
-    // Круг: белый, с чёрной обводкой.
-    let d = tile.width * 0.70
-    let line = tile.width * 0.045
-    let circle = NSRect(x: tile.midX - d / 2, y: tile.midY - d / 2, width: d, height: d)
-    let ring = NSBezierPath(ovalIn: circle)
-    NSColor.white.setFill()
-    ring.fill()
-    NSColor.black.setStroke()
-    ring.lineWidth = line
-    ring.stroke()
-
-    // Большая «U».
-    let font = NSFont.systemFont(ofSize: d * 0.72, weight: .bold)
-    let text = NSAttributedString(string: "U", attributes: [.font: font, .foregroundColor: NSColor.black])
-    let b = text.boundingRect(with: NSSize(width: s, height: s), options: [.usesLineFragmentOrigin, .usesFontLeading])
-    // По вертикали центрируем саму букву (высота заглавных), а не строку целиком.
-    let y = circle.midY - (font.capHeight / 2) + font.descender - b.origin.y
-    text.draw(at: NSPoint(x: circle.midX - b.width / 2, y: y))
+    // Синяя сфера — как большой круг на холсте Usin (цвет «Синий», 0x2563EB, с бликом и тенью).
+    let blue = NSColor(srgbRed: 0x25 / 255.0, green: 0x63 / 255.0, blue: 0xEB / 255.0, alpha: 1)
+    let d = tile.width * 0.66
+    let circle = NSRect(x: tile.midX - d / 2, y: tile.midY - d / 2 + tile.width * 0.012, width: d, height: d)
+    let sphere = NSBezierPath(ovalIn: circle)
+    NSGraphicsContext.saveGraphicsState()
+    let glow = NSShadow()
+    glow.shadowColor = blue.withAlphaComponent(0.38)
+    glow.shadowBlurRadius = tile.width * 0.06
+    glow.shadowOffset = NSSize(width: 0, height: -tile.width * 0.028)
+    glow.set()
+    blue.setFill()
+    sphere.fill()
+    NSGraphicsContext.restoreGraphicsState()
+    // Блик сверху слева, как у сферы на холсте.
+    let highlight = NSGradient(colors: [NSColor(white: 1, alpha: 0.55), NSColor(white: 1, alpha: 0)])!
+    NSGraphicsContext.saveGraphicsState()
+    sphere.addClip()
+    let center = NSPoint(x: circle.minX + d * 0.32, y: circle.maxY - d * 0.26)
+    highlight.draw(fromCenter: center, radius: 0, toCenter: center, radius: d * 0.62, options: [])
+    NSGraphicsContext.restoreGraphicsState()
 
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!
