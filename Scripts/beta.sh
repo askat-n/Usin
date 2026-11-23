@@ -1,14 +1,17 @@
 #!/bin/zsh
-# «Usin Beta» — тестовая сборка из текущего кода, которую запускает Claude, пока работает над Usin.
+# «Usin Beta» — тестовая сборка из текущего кода только для Claude: он запускает её для проверок
+# и закрывает. Её не видно: ни в Dock, ни в строке меню, окна скрыты, Spotlight её не находит
+# (папка build/beta.noindex).
 # Своё имя, свой идентификатор (com.askatbek.usin.beta), свои настройки и своя папка данных
 # (Application Support/Usin Beta): настоящие заметки и установленный Usin она не трогает.
 # Пока открыт настоящий Usin, инструменты беты (горячие клавиши, чёлка, буфер) ждут, чтобы не сработать дважды.
 #
-#   Scripts/beta.sh          собрать и открыть (уже открытую — перезапустить)
+#   Scripts/beta.sh          собрать и запустить невидимой (уже запущенную — перезапустить)
+#   Scripts/beta.sh show     то же, но с окном — чтобы посмотреть на изменения
 #   Scripts/beta.sh stop     закрыть (так делает хук SessionEnd, когда Claude отключается)
 set -euo pipefail
 ROOT="${0:A:h:h}"
-BUILD="$ROOT/build/beta"
+BUILD="$ROOT/build/beta.noindex"
 BETA="$BUILD/Usin Beta.app"
 BETA_ID="com.askatbek.usin.beta"
 
@@ -57,5 +60,10 @@ else
 fi
 codesign --verify --strict "$BETA"
 
-open "$BETA"
-echo "Usin Beta открыта: $BETA"
+if [[ "${1:-}" == "show" ]]; then
+    open --env USIN_BETA_SHOW=1 "$BETA"
+else
+    # -g: не выводить вперёд, -j: запустить скрытой.
+    open -g -j "$BETA"
+fi
+echo "Usin Beta запущена: $BETA"

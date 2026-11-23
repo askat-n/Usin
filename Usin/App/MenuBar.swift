@@ -101,6 +101,17 @@ enum DockPolicy {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if AppIdentity.isBeta {
+            // «Usin Beta» — для проверок Claude: без Dock, без значка в строке меню и без окон.
+            // Окна показываются, только если её открыли с USIN_BETA_SHOW=1 (Scripts/beta.sh show).
+            UserDefaults.standard.set(false, forKey: AppSettings.menuBarIconKey)
+            NSApp.setActivationPolicy(.accessory)
+            if ProcessInfo.processInfo.environment["USIN_BETA_SHOW"] != "1" {
+                NSApp.hide(nil)
+            }
+            StatusItemController.shared.start()
+            return
+        }
         if !DockPolicy.showInDock {
             // Без Dock значок в строке меню обязателен: иначе приложение не открыть.
             UserDefaults.standard.set(true, forKey: AppSettings.menuBarIconKey)
